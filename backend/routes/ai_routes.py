@@ -1,4 +1,5 @@
 import os
+import cv2
 from pathlib import Path
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
@@ -71,11 +72,25 @@ def predict():
                     'box': box.xyxy[0].tolist()
                 })
         
-        # 4. Cleanup (Optional: remove temp file to save space)
-        # os.remove(temp_path)
+        # 4. Save annotated image with bounding boxes
+        annotated_filename = None
+        if detections:
+            annotated_img = results[0].plot()  # Get image with boxes drawn
+            annotated_filename = secure_filename(f"detected_{file.filename}")
+            annotated_path = os.path.join(upload_folder, annotated_filename)
+            cv2.imwrite(annotated_path, annotated_img)
+            print(f"📦 Saved annotated image: {annotated_filename}")
+        
+        # 5. Cleanup temp file
+        os.remove(temp_path)
         
         print(f"✅ Success! Returning {len(detections)} detections.")
-        return jsonify({'detections': detections, 'count': len(detections), 'predictions': detections}), 200
+        return jsonify({
+            'detections': detections, 
+            'count': len(detections), 
+            'predictions': detections,
+            'annotated_image': annotated_filename
+        }), 200
 
     except Exception as e:
         # THIS IS THE IMPORTANT PART: Print the specific error to terminal

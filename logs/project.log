@@ -4390,3 +4390,43 @@
 2026-01-25 12:16:52 - model_tester - INFO - Found pothole (66.6%)
 2026-01-25 12:16:52 - model_tester - INFO - Found garbage (61.1%)
 2026-01-25 12:16:52 - model_tester - INFO - Found garbage (41.9%)
+2026-02-11 19:55:45 - model_trainer - INFO - Starting Training on 0...
+2026-02-11 19:55:45 - model_trainer - INFO - Image size: 416, Batch size: 8
+2026-02-11 20:02:23 - model_trainer - INFO - Starting Training on 0...
+2026-02-11 20:02:23 - model_trainer - INFO - Image size: 416, Batch size: 8
+2026-02-11 20:03:51 - model_trainer - INFO - Starting Training on 0...
+2026-02-11 20:03:51 - model_trainer - INFO - Image size: 416, Batch size: 8
+2026-02-11 20:35:59 - model_trainer - INFO - 
+============================================================
+2026-02-11 20:35:59 - model_trainer - INFO - 📊 TRAINING RESULTS & METRICS
+2026-02-11 20:35:59 - model_trainer - INFO - ============================================================
+2026-02-11 20:35:59 - model_trainer - INFO - mAP50: 0.6417
+2026-02-11 20:35:59 - model_trainer - INFO - mAP50-95: 0.3523
+2026-02-11 20:35:59 - model_trainer - INFO - Precision: 0.7011
+2026-02-11 20:35:59 - model_trainer - INFO - Recall: 0.5742
+2026-02-11 20:35:59 - model_trainer - INFO - 
+✅ Model saved: /home/aditya/mlproj/CivicResolve/ai_ml/models/best_civic_model.pt
+2026-02-11 20:35:59 - model_trainer - INFO - 
+============================================================
+2026-02-11 20:35:59 - model_trainer - INFO - 🔍 VALIDATION ANALYSIS
+2026-02-11 20:35:59 - model_trainer - INFO - ============================================================
+2026-02-11 20:36:07 - model_trainer - INFO - Validation mAP50: 0.6423
+2026-02-11 20:36:07 - model_trainer - INFO - Validation mAP50-95: 0.3526
+2026-02-11 20:36:07 - model_trainer - INFO - Validation Precision: 0.7037
+2026-02-11 20:36:07 - model_trainer - INFO - Validation Recall: 0.5737
+2026-02-11 20:36:07 - model_trainer - INFO - 
+📋 Per-Class mAP50-95:
+2026-02-11 20:36:07 - model_trainer - INFO -   pothole: 0.2569
+2026-02-11 20:36:07 - model_trainer - INFO -   garbage: 0.4483
+2026-02-11 20:36:07 - model_trainer - INFO - 
+============================================================
+2026-02-11 20:36:07 - model_trainer - INFO - 
+============================================================
+2026-02-11 20:36:07 - model_trainer - INFO - 📈 GENERATING VISUALIZATIONS
+2026-02-11 20:36:07 - model_trainer - INFO - ============================================================
+2026-02-11 20:36:07 - model_trainer - INFO - ✅ Training curves saved: /home/aditya/mlproj/CivicResolve/ai_ml/runs/visualizations/training_curves.png
+2026-02-11 20:36:07 - model_trainer - INFO - ✅ Confusion matrix saved: /home/aditya/mlproj/CivicResolve/ai_ml/runs/visualizations/confusion_matrix.png
+2026-02-11 20:36:11 - model_trainer - INFO - ✅ Validation predictions saved: /home/aditya/mlproj/CivicResolve/ai_ml/runs/visualizations/validation_predictions.png
+2026-02-11 20:36:11 - model_trainer - INFO - 
+📁 All visualizations saved in: /home/aditya/mlproj/CivicResolve/ai_ml/runs/visualizations
+2026-02-11 20:36:11 - model_trainer - INFO - ============================================================

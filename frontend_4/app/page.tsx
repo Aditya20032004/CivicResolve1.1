@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { UserSession } from '../types';
 import LoginView from '../views/LoginView';
 import LandingView from '../views/LandingView';
+import CitizenView from '../views/CitizenView';
 import Layout from '../components/Layout';
 import AdminView from '../views/AdminView';
 import WorkerView from '../views/WorkerView';
@@ -11,7 +12,7 @@ import CameraView from '../views/CameraView';
 
 export default function Home() {
   const [session, setSession] = useState<UserSession | null>(null);
-  const [view, setView] = useState<'landing' | 'login'>('landing');
+  const [view, setView] = useState<'landing' | 'login' | 'citizen'>('landing');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -52,9 +53,16 @@ export default function Home() {
     );
   }
 
-  // If not logged in, switch between Landing and Login
+  // If not logged in, switch between Landing, Login, and Citizen Report
   if (view === 'landing') {
-    return <LandingView onEnterPortal={() => setView('login')} />;
+    return <LandingView 
+      onEnterPortal={() => setView('login')} 
+      onReportIssue={() => setView('citizen')}
+    />;
+  }
+
+  if (view === 'citizen') {
+    return <CitizenView onBack={() => setView('landing')} />;
   }
 
   return <LoginView onLogin={handleLogin} onBack={() => setView('landing')} />;

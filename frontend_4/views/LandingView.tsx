@@ -19,9 +19,10 @@ const IncidentMap = dynamic(() => import('../components/IncidentMap'), {
 
 interface LandingViewProps {
   onEnterPortal: () => void;
+  onReportIssue: () => void;
 }
 
-const LandingView: React.FC<LandingViewProps> = ({ onEnterPortal }) => {
+const LandingView: React.FC<LandingViewProps> = ({ onEnterPortal, onReportIssue }) => {
   const [incidents, setIncidents] = useState<IncidentReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTable, setShowTable] = useState(false);
@@ -316,6 +317,15 @@ const LandingView: React.FC<LandingViewProps> = ({ onEnterPortal }) => {
               <span>Live Feed</span>
               <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all -ml-1" />
             </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.05, x: 5 }}
+              onClick={onReportIssue}
+              className="hidden md:flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-emerald-300 transition-all duration-300 group"
+            >
+              <AlertTriangle className="w-4 h-4 group-hover:text-emerald-400 transition-colors" />
+              <span>Report Issue</span>
+              <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all -ml-1" />
+            </motion.button>
             <MagneticButton 
               onClick={onEnterPortal}
               className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-black rounded-xl shadow-xl shadow-violet-500/25 hover:shadow-violet-500/40 transition-all text-sm flex items-center gap-2 group relative overflow-hidden"
@@ -425,6 +435,36 @@ const LandingView: React.FC<LandingViewProps> = ({ onEnterPortal }) => {
               </span>
               {/* Gradient overlay on hover */}
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 via-cyan-500/20 to-violet-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
+            </MagneticButton>
+
+            {/* Report Issue Button */}
+            <MagneticButton 
+              onClick={onReportIssue}
+              className="magnetic-btn px-12 py-6 bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-600 text-white font-black rounded-3xl shadow-2xl shadow-emerald-500/30 flex items-center gap-3 group relative overflow-hidden hover:shadow-emerald-500/50 hover:shadow-[0_0_60px_rgba(16,185,129,0.5)] transition-all duration-500"
+            >
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
+              />
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0 h-0 bg-white/10 rounded-full group-hover:w-[200%] group-hover:h-[200%] transition-all duration-700" />
+              </div>
+              <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 border-2 border-emerald-400/50 blur-[1px]" />
+              <span className="relative z-10 flex items-center gap-3">
+                <motion.span
+                  className="group-hover:tracking-wider transition-all duration-300"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  Report an Issue
+                </motion.span>
+                <motion.div
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="group-hover:text-emerald-300 transition-colors duration-300"
+                >
+                  <AlertTriangle className="w-5 h-5 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                </motion.div>
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/20 to-green-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
             </MagneticButton>
             
             <motion.div 

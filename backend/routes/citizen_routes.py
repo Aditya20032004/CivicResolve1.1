@@ -2,36 +2,88 @@ from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 import os
 import uuid
+import cv2
+from pathlib import Path
 from backend.models import db, PotholeReport, GarbageReport
 from backend.utils.issue_validator import get_validator
+from ultralytics import YOLO
 
 citizen_bp = Blueprint('citizen', __name__)
 
+# Load YOLO model for validator
+BASE_DIR = Path(__file__).resolve().parents[2]
+MODEL_PATH = BASE_DIR / "ai_ml" / "models" / "best_civic_model.pt"
+validation_model = None
+
+try:
+    if MODEL_PATH.exists():
+        validation_model = YOLO(str(MODEL_PATH))
+        print("✅ Validation Model Loaded for Citizen Routes")
+except Exception as e:
+    print(f"⚠️ Validation model not available: {e}")
+
 @citizen_bp.route('/report', methods=['POST'])
 def submit_report():
+    print("📝 Citizen Report Submission")
+    print(f"   Files: {list(request.files.keys())}")
+    print(f"   Form data: {dict(request.form)}")
+    
     if 'image' not in request.files:
-        return jsonify({'error': 'No image provided'}), 400
+        print("❌ Missing 'image' in files")
+        return jsonify({'error': 'No image provided', 'received_files': list(request.files.keys())}), 400
         
     file = request.files['image']
     issue_type = request.form.get('type')
     
+    if not issue_type:
+        print("❌ Missing 'type' in form data")
+        return jsonify({'error': 'Missing issue type', 'hint': 'type should be pothole or garbage'}), 400
+    
     if issue_type not in ['pothole', 'garbage']:
-        return jsonify({'error': 'Invalid issue type'}), 400
+        print(f"❌ Invalid type: {issue_type}")
+        return jsonify({'error': 'Invalid issue type', 'received': issue_type, 'allowed': ['pothole', 'garbage']}), 400
 
+    # Save original temporarily
     ext = os.path.splitext(file.filename)[1]
-    filename = secure_filename(f"{issue_type}_{uuid.uuid4().hex}{ext}")
-    save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-    file.save(save_path)
+    temp_filename = secure_filename(f"temp_{issue_type}_{uuid.uuid4().hex}{ext}")
+    temp_path = os.path.join(current_app.config['UPLOAD_FOLDER'], temp_filename)
+    file.save(temp_path)
+    
+    # Run detection and get annotated image
+    print("🔍 Running detection on submitted image...")
+    try:
+        results = validation_model(temp_path, conf=0.25)
+        annotated_img = results[0].plot()  # Get image with bounding boxes
+        
+        # Save annotated image as the main image
+        filename = secure_filename(f"{issue_type}_{uuid.uuid4().hex}{ext}")
+        save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        cv2.imwrite(save_path, annotated_img)
+        print(f"📦 Saved annotated image with detections: {filename}")
+        
+        # Remove temp file
+        os.remove(temp_path)
+    except Exception as e:
+        print(f"⚠️ Detection failed, using original image: {e}")
+        # Fallback: use original if detection fails
+        filename = secure_filename(f"{issue_type}_{uuid.uuid4().hex}{ext}")
+        save_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        os.rename(temp_path, save_path)
     
     # --- Issue Validation ---
     lat = request.form.get('lat', type=float)
     lng = request.form.get('lng', type=float)
     
-    validator = get_validator()
+    print(f"🔍 Validating: lat={lat}, lng={lng}, type={issue_type}")
+    
+    validator = get_validator(model=validation_model)
     validation = validator.validate_report(save_path, lat, lng, issue_type)
+    
+    print(f"   Validation result: {validation}")
     
     if validation['decision'] == 'rejected':
         os.remove(save_path)  # Cleanup rejected image
+        print(f"❌ Report REJECTED: {validation['message']}")
         return jsonify({
             'error': validation['message'],
             'trust_score': validation['score']
