@@ -10,17 +10,21 @@ from ultralytics import YOLO
 
 citizen_bp = Blueprint('citizen', __name__)
 
-# Load YOLO model for validator
+# Lazy load YOLO model for validator
 BASE_DIR = Path(__file__).resolve().parents[2]
 MODEL_PATH = BASE_DIR / "ai_ml" / "models" / "best_civic_model.pt"
-validation_model = None
+_validation_model = None
 
-try:
-    if MODEL_PATH.exists():
-        validation_model = YOLO(str(MODEL_PATH))
-        print("✅ Validation Model Loaded for Citizen Routes")
-except Exception as e:
-    print(f"⚠️ Validation model not available: {e}")
+def get_validation_model():
+    """Lazy load validation model only when needed"""
+    global _validation_model
+    if _validation_model is None:
+        if MODEL_PATH.exists():
+            _validation_model = YOLO(str(MODEL_PATH))
+            print("✅ Validation Model Loaded for Citizen Routes")
+        else:
+            print(f"⚠️ Model not found at {MODEL_PATH}")
+    return _validation_model
 
 @citizen_bp.route('/report', methods=['POST'])
 def submit_report():
@@ -52,7 +56,8 @@ def submit_report():
     # Run detection and get annotated image
     print("🔍 Running detection on submitted image...")
     try:
-        results = validation_model(temp_path, conf=0.25)
+        model = get_validation_model()
+        results = model(temp_path, conf=0.25)
         annotated_img = results[0].plot()  # Get image with bounding boxes
         
         # Save annotated image as the main image
@@ -76,7 +81,7 @@ def submit_report():
     
     print(f"🔍 Validating: lat={lat}, lng={lng}, type={issue_type}")
     
-    validator = get_validator(model=validation_model)
+    validator = get_validator(model=get_validation_model())
     validation = validator.validate_report(save_path, lat, lng, issue_type)
     
     print(f"   Validation result: {validation}")

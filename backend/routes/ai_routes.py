@@ -7,27 +7,33 @@ from ultralytics import YOLO
 
 ai_bp = Blueprint('ai', __name__)
 
-# --- ROBUST MODEL LOADING ---
-# We calculate the path relative to THIS file to be safe
+# --- LAZY MODEL LOADING (reduce startup memory) ---
 BASE_DIR = Path(__file__).resolve().parents[2] # Points to CivicResolve/
 MODEL_PATH = BASE_DIR / "ai_ml" / "models" / "best_civic_model.pt"
 
-print(f"🔍 Looking for model at: {MODEL_PATH}")
+_model = None
 
-model = None
-try:
-    if MODEL_PATH.exists():
-        model = YOLO(str(MODEL_PATH))
+def get_model():
+    """Lazy load model only when first needed"""
+    global _model
+    if _model is None:
+        print(f"🔍 Loading model from: {MODEL_PATH}")
+        if not MODEL_PATH.exists():
+            raise FileNotFoundError(f"Model not found at {MODEL_PATH}")
+        _model = YOLO(str(MODEL_PATH))
         print("✅ AI Model Loaded Successfully")
-    else:
-        print("❌ Model file NOT found! Please run training first.")
-except Exception as e:
-    print(f"❌ CRITICAL ERROR LOADING MODEL: {e}")
+    return _model
 
 @ai_bp.route('/predict', methods=['POST'])
 def predict():
     print("⚡ Incoming Prediction Request...") # Debug Print
 
+    try:
+        model = get_model()
+    except Exception as e:
+        print(f"❌ Failed to load model: {e}")
+        return jsonify({'error': 'AI Model not ready'}), 503
+    
     if not model:
         print("⚠️ Prediction failed: Model not loaded.")
         return jsonify({'error': 'AI Model not ready'}), 503
