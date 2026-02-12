@@ -8,7 +8,7 @@ import pandas as pd
 import cv2
 import numpy as np
 
-# Robust Path Setup: ai_ml/training/train_model.py -> CivicResolve
+
 project_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(project_root))
 

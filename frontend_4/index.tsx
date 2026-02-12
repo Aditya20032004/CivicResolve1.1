@@ -53,7 +53,7 @@ function App() {
 
   // If not logged in, switch between Public Landing and Login Portal
   if (view === 'landing') {
-    return <LandingView onEnterPortal={() => setView('login')} />;
+    return <LandingView onEnterPortal={() => setView('login')} onReportIssue={() => setView('login')} />;
   }
 
   return <LoginView onLogin={handleLogin} onBack={() => setView('landing')} />;
