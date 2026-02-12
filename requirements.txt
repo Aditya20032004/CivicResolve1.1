@@ -7,11 +7,10 @@ gunicorn==21.2.0
 python-dotenv==1.0.0
 
 # AI/ML Dependencies - CPU-only optimized for low memory
-ultralytics==8.0.196
+ultralytics>=8.0.0
 opencv-python-headless==4.8.0.74
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.1.0+cpu
-torchvision==0.16.0+cpu
+torch>=2.0.0
+torchvision>=0.15.0
 pillow==10.0.0
 numpy==1.24.3
 

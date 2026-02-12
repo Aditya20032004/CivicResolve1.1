@@ -3,13 +3,12 @@ services:
     name: civicresolve-backend
     env: python
     plan: free  # Can upgrade to 'starter' for 512MB+ RAM
+    runtime: python-3.11.0
     buildCommand: pip install --no-cache-dir -r requirements.txt
     startCommand: ./run.sh
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: NODE_VERSION
-        value: 18.17.0
       - key: DATABASE_URL
         sync: false
       - key: FLASK_ENV
