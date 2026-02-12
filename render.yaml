@@ -4,7 +4,7 @@ services:
     env: python
     plan: free  # Can upgrade to 'starter' for 512MB+ RAM
     runtime: python-3.11.0
-    buildCommand: pip install --no-cache-dir -r requirements.txt
+    buildCommand: ./render-build.sh
     startCommand: ./run.sh
     envVars:
       - key: PYTHON_VERSION
