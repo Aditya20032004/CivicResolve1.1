@@ -2,7 +2,8 @@ services:
   - type: web
     name: civicresolve-backend
     env: python
-    buildCommand: pip install -r requirements.txt
+    plan: free  # Can upgrade to 'starter' for 512MB+ RAM
+    buildCommand: pip install --no-cache-dir -r requirements.txt
     startCommand: ./run.sh
     envVars:
       - key: PYTHON_VERSION

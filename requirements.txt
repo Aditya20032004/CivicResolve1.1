@@ -1,23 +1,23 @@
 # Backend Flask Dependencies
-Flask>=2.3.0
-Flask-SQLAlchemy>=3.0.0
-Flask-CORS>=4.0.0
-gunicorn>=21.2.0
+Flask==2.3.0
+Flask-SQLAlchemy==3.0.0
+Flask-CORS==4.0.0
+gunicorn==21.2.0
 
-python-dotenv>=1.0.0
+python-dotenv==1.0.0
 
-# AI/ML Dependencies
-ultralytics>=8.0.0
-opencv-python-headless>=4.8.0
-torch>=2.0.0
-torchvision>=0.15.0
-pillow>=10.0.0
-numpy>=1.24.0
+# AI/ML Dependencies - CPU-only optimized for low memory
+ultralytics==8.0.196
+opencv-python-headless==4.8.0.74
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.1.0+cpu
+torchvision==0.16.0+cpu
+pillow==10.0.0
+numpy==1.24.3
 
 # PostgreSQL Database Dependencies
-psycopg2-binary>=2.9.0
+psycopg2-binary==2.9.7
 
 # Utility Dependencies
-requests>=2.31.0
-pyyaml>=6.0
-matplotlib>=3.7.0
+requests==2.31.0
+pyyaml==6.0.1

@@ -1,0 +1,18 @@
+# Exclude from Render deployment
+frontend_4/
+node_modules/
+*.ipynb
+bulldozer/
+data/
+NanoGPT/
+tf/
+github/
+tests/
+docs/
+__pycache__/
+*.pyc
+.git/
+.vscode/
+logs/
+runs/
+notebook/
