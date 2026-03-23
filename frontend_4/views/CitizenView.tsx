@@ -10,7 +10,6 @@ interface CitizenViewProps {
 const CitizenView: React.FC<CitizenViewProps> = ({ onBack }) => {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [issueType, setIssueType] = useState<'pothole' | 'garbage'>('pothole');
   const [address, setAddress] = useState('');
   const [lat, setLat] = useState('23.2599');
   const [lng, setLng] = useState('77.4126');
@@ -60,7 +59,6 @@ const CitizenView: React.FC<CitizenViewProps> = ({ onBack }) => {
 
     const formData = new FormData();
     formData.append('image', file, file.name);
-    formData.append('type', issueType);
     formData.append('lat', lat);
     formData.append('lng', lng);
     formData.append('address', address);
@@ -70,9 +68,18 @@ const CitizenView: React.FC<CitizenViewProps> = ({ onBack }) => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
+      const detectedType = response.data.detected_type || 'issue';
+      const autoSeverity = response.data.auto_severity || null;
+
+      const parts: string[] = [];
+      parts.push(`Your ${detectedType} report has been registered.`);
+      if (autoSeverity) {
+        parts.push(`AI estimated severity as ${autoSeverity}.`);
+      }
+
       setResult({
         type: 'success',
-        msg: `Report submitted successfully! Your ${issueType} report has been registered.`,
+        msg: `Report submitted successfully! ${parts.join(' ')}`,
         id: response.data.id
       });
 
@@ -121,37 +128,6 @@ const CitizenView: React.FC<CitizenViewProps> = ({ onBack }) => {
           className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-8 shadow-2xl"
         >
           <div className="space-y-8">
-            {/* Issue Type Selection */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-300 mb-3">
-                Issue Type
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={() => setIssueType('pothole')}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    issueType === 'pothole'
-                      ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                      : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600'
-                  }`}
-                >
-                  <div className="text-lg font-bold">🕳️ Pothole</div>
-                  <div className="text-xs mt-1 opacity-70">Road damage</div>
-                </button>
-                <button
-                  onClick={() => setIssueType('garbage')}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    issueType === 'garbage'
-                      ? 'border-green-500 bg-green-500/10 text-green-400'
-                      : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600'
-                  }`}
-                >
-                  <div className="text-lg font-bold">🗑️ Garbage</div>
-                  <div className="text-xs mt-1 opacity-70">Waste accumulation</div>
-                </button>
-              </div>
-            </div>
-
             {/* Image Upload */}
             <div>
               <label className="block text-sm font-semibold text-slate-300 mb-3">
@@ -276,11 +252,11 @@ const CitizenView: React.FC<CitizenViewProps> = ({ onBack }) => {
           <ul className="space-y-2 text-slate-400 text-sm">
             <li className="flex items-start gap-2">
               <span className="text-blue-400 font-bold">1.</span>
-              <span>Select the type of issue (pothole or garbage)</span>
+              <span>Upload a clear photo of the issue</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-400 font-bold">2.</span>
-              <span>Upload a clear photo showing the problem</span>
+              <span>AI will auto-detect if it is a pothole or garbage</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-400 font-bold">3.</span>

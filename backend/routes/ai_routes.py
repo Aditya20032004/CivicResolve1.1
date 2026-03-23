@@ -4,6 +4,7 @@ from pathlib import Path
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 from ultralytics import YOLO
+from backend.utils.severity_classifier import classify_issue_from_results
 
 ai_bp = Blueprint('ai', __name__)
 
@@ -77,6 +78,9 @@ def predict():
                     'confidence': conf,
                     'box': box.xyxy[0].tolist()
                 })
+
+        # Auto class + severity estimation for camera-side use
+        classification = classify_issue_from_results(results, model)
         
         # 4. Save annotated image with bounding boxes
         annotated_filename = None
@@ -92,10 +96,13 @@ def predict():
         
         print(f"✅ Success! Returning {len(detections)} detections.")
         return jsonify({
-            'detections': detections, 
-            'count': len(detections), 
+            'detections': detections,
+            'count': len(detections),
             'predictions': detections,
-            'annotated_image': annotated_filename
+            'annotated_image': annotated_filename,
+            'issue_class': classification.get('issue_class'),
+            'severity': classification.get('severity'),
+            'severity_stats': classification.get('stats'),
         }), 200
 
     except Exception as e:

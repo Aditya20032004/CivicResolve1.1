@@ -28,11 +28,28 @@ interface IncidentMapProps {
   zoom?: number;
 }
 
+// Focus the map and incident markers around Bhopal.
+const BHOPAL_CENTER: [number, number] = [23.2599, 77.4126];
+const BHOPAL_RADIUS_DEG = 0.45; // ~50km bounding square
+
+const isWithinBhopalArea = (lat: number, lng: number) => {
+  if (lat == null || lng == null) return false;
+  return (
+    Math.abs(lat - BHOPAL_CENTER[0]) <= BHOPAL_RADIUS_DEG &&
+    Math.abs(lng - BHOPAL_CENTER[1]) <= BHOPAL_RADIUS_DEG
+  );
+};
+
 const IncidentMap: React.FC<IncidentMapProps> = ({ 
   incidents, 
-  center = [12.9716, 77.5946], 
+  center = BHOPAL_CENTER, 
   zoom = 13 
 }) => {
+  const visibleIncidents = incidents.filter((incident) =>
+    incident.location &&
+    isWithinBhopalArea(incident.location.lat, incident.location.lng)
+  );
+
   return (
     <div className="h-full w-full rounded-xl overflow-hidden shadow-inner border border-gray-200">
       <MapContainer center={center} zoom={zoom} scrollWheelZoom={false} className="h-full w-full">
@@ -40,7 +57,7 @@ const IncidentMap: React.FC<IncidentMapProps> = ({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {incidents.map((incident) => (
+        {visibleIncidents.map((incident) => (
           <Marker 
             key={incident.id} 
             position={[incident.location.lat, incident.location.lng]}

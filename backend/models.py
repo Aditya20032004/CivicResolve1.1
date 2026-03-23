@@ -3,6 +3,7 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+
 class BaseReport(db.Model):
     """Abstract base class for common fields."""
     __abstract__ = True
@@ -51,7 +52,86 @@ class GarbageReport(BaseReport):
             'garbage_type': self.garbage_type,
             'status': self.status,
             'assigned_to': self.assigned_worker_id,
-            'location': {'lat': self.latitude, 'lng': self.longitude, 'address': self.address},
-            'images': {'original': self.image_filename, 'resolved': self.resolved_image},
-            'created_at': self.created_at.isoformat()
+            'location': {
+                'lat': self.latitude,
+                'lng': self.longitude,
+                'address': self.address,
+            },
+            'images': {
+                'original': self.image_filename,
+                'resolved': self.resolved_image,
+            },
+            'created_at': self.created_at.isoformat(),
         }
+
+
+class Worker(db.Model):
+    __tablename__ = 'workers'
+
+    id = db.Column(db.String(50), primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    is_available = db.Column(db.Boolean, default=True)
+    active_tasks = db.Column(db.Integer, default=0)
+    # Per-worker max concurrent tasks (worker capacity)
+    max_tasks = db.Column(db.Integer, default=3)
+
+    # Simple reward/penalty tracking for report honesty
+    reward_points = db.Column(db.Integer, default=0)
+    penalty_points = db.Column(db.Integer, default=0)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'location': {
+                'lat': self.latitude,
+                'lng': self.longitude,
+            },
+            'is_available': self.is_available,
+            'active_tasks': self.active_tasks,
+            'max_tasks': self.max_tasks,
+            'reward_points': self.reward_points,
+            'penalty_points': self.penalty_points,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class VerificationLog(db.Model):
+    """Immutable audit record of verification decisions for a report.
+
+    Captures both automatic (worker AI + camera, camera sweep) and
+    manual admin decisions so they can be reviewed later or disputed
+    by workers.
+    """
+
+    __tablename__ = 'verification_logs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    report_id = db.Column(db.Integer, nullable=False)
+    report_type = db.Column(db.String(20), nullable=False)  # 'pothole' or 'garbage'
+    worker_id = db.Column(db.String(50), nullable=True)
+    channel = db.Column(db.String(50), nullable=False)  # 'worker_auto', 'admin_manual', 'camera_sweep'
+    decision = db.Column(db.String(20), nullable=False)  # 'verified', 'assigned', 'rejected'
+    reason = db.Column(db.String(500), nullable=True)
+    details_json = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class DisputeTicket(db.Model):
+    """Worker- or admin-initiated dispute against a verification log."""
+
+    __tablename__ = 'disputes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    log_id = db.Column(db.Integer, nullable=False)
+    worker_id = db.Column(db.String(50), nullable=True)
+    message = db.Column(db.String(500), nullable=False)
+    status = db.Column(db.String(20), default='open')  # open, resolved
+    resolution_notes = db.Column(db.String(500), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    resolved_at = db.Column(db.DateTime, nullable=True)

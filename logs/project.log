@@ -4430,3 +4430,108 @@
 2026-02-11 20:36:11 - model_trainer - INFO - 
 📁 All visualizations saved in: /home/aditya/mlproj/CivicResolve/ai_ml/runs/visualizations
 2026-02-11 20:36:11 - model_trainer - INFO - ============================================================
+2026-03-22 21:45:27 - model_trainer - INFO - Starting Training on 0...
+2026-03-22 21:45:27 - model_trainer - INFO - Image size: 416, Batch size: 8
+2026-03-22 21:46:43 - data_preparation - INFO - Project Root detected as: /home/aditya/mlproj/CivicResolvev1.1
+2026-03-22 21:46:43 - data_preparation - INFO - Looking for data in: /home/aditya/mlproj/CivicResolvev1.1/data/archive
+2026-03-22 21:46:43 - data_preparation - INFO - Created output directory: /home/aditya/mlproj/CivicResolvev1.1/data/yolo_format
+2026-03-22 21:46:43 - data_preparation - INFO - Scanning for images recursively...
+2026-03-22 21:46:44 - data_preparation - INFO - Found 47140 total images. Checking labels...
+2026-03-22 21:46:49 - data_preparation - INFO - Found 46052 valid samples for training.
+2026-03-22 21:46:49 - data_preparation - INFO - Saving 36841 samples to train...
+2026-03-22 21:47:02 - data_preparation - INFO - Saving 9211 samples to val...
+2026-03-22 21:47:05 - data_preparation - INFO - Config created at /home/aditya/mlproj/CivicResolvev1.1/data/yolo_format/dataset.yaml with 10 classes
+2026-03-22 21:47:48 - model_trainer - INFO - Starting Training on 0...
+2026-03-22 21:47:48 - model_trainer - INFO - Image size: 416, Batch size: 8
+2026-03-23 00:56:51 - model_trainer - INFO - Starting Training on 0...
+2026-03-23 00:56:51 - model_trainer - INFO - Image size: 416, Batch size: 8
+2026-03-23 02:34:16 - model_trainer - INFO - 
+============================================================
+2026-03-23 02:34:16 - model_trainer - INFO - 📊 TRAINING RESULTS & METRICS
+2026-03-23 02:34:16 - model_trainer - INFO - ============================================================
+2026-03-23 02:34:16 - model_trainer - INFO - mAP50: 0.5765
+2026-03-23 02:34:16 - model_trainer - INFO - mAP50-95: 0.3718
+2026-03-23 02:34:16 - model_trainer - INFO - Precision: 0.6147
+2026-03-23 02:34:16 - model_trainer - INFO - Recall: 0.5664
+2026-03-23 02:34:16 - model_trainer - INFO - 
+✅ Model saved: /home/aditya/mlproj/CivicResolvev1.1/ai_ml/models/best_civic_model.pt
+2026-03-23 02:34:16 - model_trainer - INFO - 
+============================================================
+2026-03-23 02:34:16 - model_trainer - INFO - 🔍 VALIDATION ANALYSIS
+2026-03-23 02:34:16 - model_trainer - INFO - ============================================================
+2026-03-23 02:34:43 - model_trainer - INFO - Validation mAP50: 0.5766
+2026-03-23 02:34:43 - model_trainer - INFO - Validation mAP50-95: 0.3717
+2026-03-23 02:34:43 - model_trainer - INFO - Validation Precision: 0.6144
+2026-03-23 02:34:43 - model_trainer - INFO - Validation Recall: 0.5640
+2026-03-23 02:34:43 - model_trainer - INFO - 
+📋 Per-Class mAP50-95:
+2026-03-23 02:34:43 - model_trainer - INFO -   Damaged Road issues: 0.2293
+2026-03-23 02:34:43 - model_trainer - INFO -   Pothole Issues: 0.1957
+2026-03-23 02:34:43 - model_trainer - INFO -   Illegal Parking Issues: 0.0608
+2026-03-23 02:34:43 - model_trainer - INFO -   Broken Road Sign Issues: 0.8114
+2026-03-23 02:34:43 - model_trainer - INFO -   Fallen trees: 0.5889
+2026-03-23 02:34:43 - model_trainer - INFO -   Littering/Garbage on Public Places: 0.3468
+2026-03-23 02:34:43 - model_trainer - INFO -   Vandalism Issues: 0.4351
+2026-03-23 02:34:43 - model_trainer - INFO -   Dead Animal Pollution: 0.2675
+2026-03-23 02:34:43 - model_trainer - INFO -   Damaged concrete structures: 0.1231
+2026-03-23 02:34:43 - model_trainer - INFO -   Damaged Electric wires and poles: 0.6582
+2026-03-23 02:34:43 - model_trainer - INFO - 
+============================================================
+2026-03-23 02:34:43 - model_trainer - INFO - 
+============================================================
+2026-03-23 02:34:43 - model_trainer - INFO - 📈 GENERATING VISUALIZATIONS
+2026-03-23 02:34:43 - model_trainer - INFO - ============================================================
+2026-03-23 02:34:44 - model_trainer - INFO - ✅ Training curves saved: /home/aditya/mlproj/CivicResolvev1.1/ai_ml/runs/visualizations/training_curves.png
+2026-03-23 02:34:44 - model_trainer - INFO - ✅ Confusion matrix saved: /home/aditya/mlproj/CivicResolvev1.1/ai_ml/runs/visualizations/confusion_matrix.png
+2026-03-23 02:34:49 - model_trainer - INFO - ✅ Validation predictions saved: /home/aditya/mlproj/CivicResolvev1.1/ai_ml/runs/visualizations/validation_predictions.png
+2026-03-23 02:34:49 - model_trainer - INFO - 
+📁 All visualizations saved in: /home/aditya/mlproj/CivicResolvev1.1/ai_ml/runs/visualizations
+2026-03-23 02:34:49 - model_trainer - INFO - ============================================================
+2026-03-23 08:17:19 - model_trainer - INFO - Starting Training on 0...
+2026-03-23 08:17:19 - model_trainer - INFO - Image size: 640, Batch size: 8
+2026-03-23 08:20:47 - model_trainer - INFO - Starting Training on 0...
+2026-03-23 08:20:47 - model_trainer - INFO - Image size: 640, Batch size: 8
+2026-03-23 08:21:40 - model_trainer - INFO - Starting Training on 0...
+2026-03-23 08:21:40 - model_trainer - INFO - Image size: 640, Batch size: 8
+2026-03-23 12:13:59 - model_trainer - INFO - 
+============================================================
+2026-03-23 12:13:59 - model_trainer - INFO - 📊 TRAINING RESULTS & METRICS
+2026-03-23 12:13:59 - model_trainer - INFO - ============================================================
+2026-03-23 12:13:59 - model_trainer - INFO - mAP50: 0.6622
+2026-03-23 12:13:59 - model_trainer - INFO - mAP50-95: 0.4491
+2026-03-23 12:13:59 - model_trainer - INFO - Precision: 0.6516
+2026-03-23 12:13:59 - model_trainer - INFO - Recall: 0.6435
+2026-03-23 12:13:59 - model_trainer - INFO - 
+✅ Model saved: /home/aditya/mlproj/CivicResolvev1.1/ai_ml/models/best_civic_model.pt
+2026-03-23 12:13:59 - model_trainer - INFO - 
+============================================================
+2026-03-23 12:13:59 - model_trainer - INFO - 🔍 VALIDATION ANALYSIS
+2026-03-23 12:13:59 - model_trainer - INFO - ============================================================
+2026-03-23 12:17:10 - model_trainer - INFO - Validation mAP50: 0.6623
+2026-03-23 12:17:10 - model_trainer - INFO - Validation mAP50-95: 0.4494
+2026-03-23 12:17:10 - model_trainer - INFO - Validation Precision: 0.6506
+2026-03-23 12:17:10 - model_trainer - INFO - Validation Recall: 0.6444
+2026-03-23 12:17:10 - model_trainer - INFO - 
+📋 Per-Class mAP50-95:
+2026-03-23 12:17:10 - model_trainer - INFO -   Damaged Road issues: 0.3094
+2026-03-23 12:17:10 - model_trainer - INFO -   Pothole Issues: 0.2394
+2026-03-23 12:17:10 - model_trainer - INFO -   Illegal Parking Issues: 0.1254
+2026-03-23 12:17:10 - model_trainer - INFO -   Broken Road Sign Issues: 0.8269
+2026-03-23 12:17:10 - model_trainer - INFO -   Fallen trees: 0.7172
+2026-03-23 12:17:10 - model_trainer - INFO -   Littering/Garbage on Public Places: 0.4301
+2026-03-23 12:17:10 - model_trainer - INFO -   Vandalism Issues: 0.5194
+2026-03-23 12:17:10 - model_trainer - INFO -   Dead Animal Pollution: 0.3500
+2026-03-23 12:17:10 - model_trainer - INFO -   Damaged concrete structures: 0.1764
+2026-03-23 12:17:10 - model_trainer - INFO -   Damaged Electric wires and poles: 0.7999
+2026-03-23 12:17:10 - model_trainer - INFO - 
+============================================================
+2026-03-23 12:17:10 - model_trainer - INFO - 
+============================================================
+2026-03-23 12:17:10 - model_trainer - INFO - 📈 GENERATING VISUALIZATIONS
+2026-03-23 12:17:10 - model_trainer - INFO - ============================================================
+2026-03-23 12:17:11 - model_trainer - INFO - ✅ Training curves saved: /home/aditya/mlproj/CivicResolvev1.1/ai_ml/runs/visualizations/training_curves.png
+2026-03-23 12:17:11 - model_trainer - INFO - ✅ Confusion matrix saved: /home/aditya/mlproj/CivicResolvev1.1/ai_ml/runs/visualizations/confusion_matrix.png
+2026-03-23 12:17:17 - model_trainer - INFO - ✅ Validation predictions saved: /home/aditya/mlproj/CivicResolvev1.1/ai_ml/runs/visualizations/validation_predictions.png
+2026-03-23 12:17:17 - model_trainer - INFO - 
+📁 All visualizations saved in: /home/aditya/mlproj/CivicResolvev1.1/ai_ml/runs/visualizations
+2026-03-23 12:17:17 - model_trainer - INFO - ============================================================

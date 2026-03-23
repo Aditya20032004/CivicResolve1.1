@@ -9,8 +9,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 const AdminView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'verification'>('dashboard');
   const [incidents, setIncidents] = useState<IncidentReport[]>([]);
+  const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [assignForm, setAssignForm] = useState({ incidentId: '', workerId: 'worker_01' });
+  const [assignForm, setAssignForm] = useState({ incidentId: '', workerId: '' });
+  const [verifyLogs, setVerifyLogs] = useState<any[]>([]);
+  const [disputes, setDisputes] = useState<any[]>([]);
+  const [sweepSummary, setSweepSummary] = useState<any | null>(null);
   const [MapComponent, setMapComponent] = useState<React.ComponentType<any> | null>(null);
 
   useEffect(() => {
@@ -30,10 +34,23 @@ const AdminView: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await api.get(endpoints.admin.reports);
-      setIncidents(res.data);
+      const [reportsRes, workersRes, logsRes, disputesRes] = await Promise.all([
+        api.get(endpoints.admin.reports),
+        api.get(endpoints.admin.workers),
+        api.get(endpoints.workflow.verifyLogs),
+        api.get(endpoints.workflow.disputes),
+      ]);
+      setIncidents(reportsRes.data);
+      setWorkers(workersRes.data || []);
+      setVerifyLogs(logsRes.data || []);
+      setDisputes(disputesRes.data || []);
+
+      // If no worker selected yet, default to first worker
+      if (!assignForm.workerId && workersRes.data && workersRes.data.length > 0) {
+        setAssignForm((prev) => ({ ...prev, workerId: workersRes.data[0].id }));
+      }
     } catch (err) {
-      console.error("Failed to fetch reports", err);
+      console.error("Failed to fetch admin data", err);
     } finally {
       setTimeout(() => setLoading(false), 800);
     }
@@ -69,8 +86,38 @@ const AdminView: React.FC = () => {
     }
   };
 
-  const pendingCount = incidents.filter(i => i.status === 'pending').length;
-  const resolvedCount = incidents.filter(i => i.status === 'verified').length;
+  const handleCameraSweep = async () => {
+    // Show immediate feedback while the sweep is running
+    setSweepSummary({ loading: true });
+    try {
+      const res = await api.post(endpoints.workflow.cameraSweep, {});
+      setSweepSummary(res.data || { message: 'Camera sweep completed' });
+      fetchData();
+    } catch (err: any) {
+      console.error('Camera sweep failed', err);
+      const apiError = err?.response?.data?.error || 'Camera sweep failed';
+      setSweepSummary({ error: apiError });
+    }
+  };
+
+  const now = new Date();
+  const withSla = incidents.map((i) => {
+    const created = i.created_at ? new Date(i.created_at) : null;
+    const ageHours = created ? (now.getTime() - created.getTime()) / 36e5 : 0;
+    let targetHours = 24;
+    if (i.type === 'pothole') {
+      if ((i as any).severity === 'high') targetHours = 4;
+      else if ((i as any).severity === 'low') targetHours = 72;
+    }
+    const breached = ageHours > targetHours && i.status !== 'verified';
+    return { ...i, ageHours, targetHours, breached } as any;
+  });
+
+  const pendingCount = withSla.filter(i => i.status === 'pending').length;
+  const resolvedCount = withSla.filter(i => i.status === 'verified').length;
+  const breachedCount = withSla.filter(i => i.breached).length;
+  const totalTracked = withSla.length || 1;
+  const nodeHealth = Math.max(0, 100 - Math.round((breachedCount / totalTracked) * 100));
   const verificationQueue = incidents.filter(i => i.status === 'completed');
 
   const containerVariants = {
@@ -142,8 +189,8 @@ const AdminView: React.FC = () => {
               {[
                 { label: 'Active Alerts', val: pendingCount, icon: AlertCircle, color: 'text-orange-500', bg: 'bg-orange-500/10' },
                 { label: 'Resolved Assets', val: resolvedCount, icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-                { label: 'Total Lifecycle', val: incidents.length, icon: Database, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-                { label: 'Node Health', val: '98.4%', icon: Activity, color: 'text-white', bg: 'bg-amber-600', dark: true }
+                { label: 'SLA Breaches', val: breachedCount, icon: ShieldCheck, color: 'text-red-500', bg: 'bg-red-500/10' },
+                { label: 'Node Health', val: `${nodeHealth.toFixed(1)}%`, icon: Activity, color: 'text-white', bg: 'bg-amber-600', dark: true }
               ].map((stat, i) => (
                 <motion.div 
                   key={i}
@@ -225,7 +272,7 @@ const AdminView: React.FC = () => {
               </div>
             </div>
 
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 space-y-6">
               <motion.div 
                 whileHover={{ scale: 1.02 }}
                 className="glass-card p-10 rounded-[3.5rem] shadow-2xl border border-stone-800 sticky top-24"
@@ -254,14 +301,23 @@ const AdminView: React.FC = () => {
                   
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-stone-600 uppercase tracking-[0.4em] ml-2">Field Operator</label>
-                    <input
-                      type="text"
+                    <select
                       value={assignForm.workerId}
                       onChange={(e) => setAssignForm({ ...assignForm, workerId: e.target.value })}
-                      className="w-full p-5 bg-stone-900/40 border border-stone-800 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500/50 text-sm font-black text-stone-100 transition-all placeholder-stone-700"
-                      placeholder="Operator ID"
+                      className="w-full p-5 bg-stone-900/40 border border-stone-800 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500/50 text-sm font-black text-stone-100 transition-all cursor-pointer"
                       required
-                    />
+                    >
+                      <option value="">Select worker...</option>
+                      {workers.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.id} 
+                          {w.name ? `- ${w.name}` : ''}
+                          {w.active_tasks !== undefined && w.max_tasks !== undefined
+                            ? ` (tasks ${w.active_tasks}/${w.max_tasks})`
+                            : ''}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <button
@@ -273,6 +329,33 @@ const AdminView: React.FC = () => {
                   </button>
                 </form>
               </motion.div>
+
+              {workers.length > 0 && (
+                <motion.div 
+                  whileHover={{ scale: 1.01 }}
+                  className="glass-card p-6 rounded-[3rem] shadow-xl border border-stone-800/80"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-black text-stone-200 uppercase tracking-[0.25em]">Worker Performance</h4>
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {workers.map((w) => (
+                      <div key={w.id} className="flex items-center justify-between text-xs glass-warm rounded-2xl px-3 py-2 border border-stone-800/80">
+                        <div>
+                          <p className="font-black text-stone-100 tracking-tight">{w.id}</p>
+                          {w.name && <p className="text-[10px] text-stone-500 font-bold uppercase tracking-[0.25em]">{w.name}</p>}
+                        </div>
+                        <div className="text-right text-[10px] font-black uppercase tracking-[0.22em] space-y-1">
+                          <p className="text-stone-400">Load {w.active_tasks}/{w.max_tasks}</p>
+                          <p className="text-emerald-400">R {w.reward_points}</p>
+                          <p className="text-red-400">P {w.penalty_points}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
             </div>
           </motion.div>
         ) : (
@@ -281,20 +364,51 @@ const AdminView: React.FC = () => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10"
+            className="grid grid-cols-1 lg:grid-cols-3 gap-10"
           >
-            {verificationQueue.length === 0 ? (
-              <div className="md:col-span-full py-32 text-center glass-warm rounded-[4rem] border border-stone-800/50 flex flex-col items-center justify-center space-y-8 amber-glow">
-                <div className="w-24 h-24 glass rounded-[2rem] flex items-center justify-center text-stone-700">
-                  <ShieldCheck className="w-12 h-12" />
-                </div>
-                <div>
-                  <p className="text-stone-50 font-black text-3xl tracking-tighter">Integrity Verified</p>
-                  <p className="text-stone-500 font-medium text-lg mt-2">All field tasks have been human-audited or are clear.</p>
-                </div>
+            <div className="lg:col-span-2 space-y-8">
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-black text-stone-50 tracking-tighter">Human Verification Queue</h3>
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleCameraSweep}
+                  className="flex items-center gap-2 px-5 py-3 glass border border-amber-500/40 rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] text-amber-300 hover:bg-amber-500/10"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  Run Camera Sweep
+                </motion.button>
               </div>
-            ) : (
-              verificationQueue.map((t) => (
+
+              {sweepSummary && (
+                <div className="glass-warm border border-stone-800 rounded-2xl px-5 py-3 text-[11px] text-stone-200 flex items-center justify-between">
+                  {sweepSummary.loading ? (
+                    <span className="text-stone-400 font-black uppercase tracking-[0.2em]">Running camera sweep…</span>
+                  ) : sweepSummary.error ? (
+                    <span className="text-red-400 font-black uppercase tracking-[0.2em]">{sweepSummary.error}</span>
+                  ) : (
+                    <>
+                      <span className="font-black uppercase tracking-[0.2em] text-stone-400">Camera sweep</span>
+                      <span className="text-stone-300">
+                        Scanned {sweepSummary.scanned_incidents ?? 0} / Auto-verified {sweepSummary.auto_verified ?? 0}
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {verificationQueue.length === 0 ? (
+                <div className="py-24 text-center glass-warm rounded-[3rem] border border-stone-800/50 flex flex-col items-center justify-center space-y-6 amber-glow">
+                  <div className="w-20 h-20 glass rounded-[2rem] flex items-center justify-center text-stone-700">
+                    <ShieldCheck className="w-10 h-10" />
+                  </div>
+                  <div>
+                    <p className="text-stone-50 font-black text-2xl tracking-tighter">Integrity Verified</p>
+                    <p className="text-stone-500 font-medium text-sm mt-2">All field tasks have been human-audited or cleared by automation.</p>
+                  </div>
+                </div>
+              ) : (
+                verificationQueue.map((t) => (
                 <motion.div 
                   key={t.id} 
                   whileHover={{ y: -10 }}
@@ -342,7 +456,58 @@ const AdminView: React.FC = () => {
                   </div>
                 </motion.div>
               ))
-            )}
+              )}
+            </div>
+
+            <div className="space-y-8">
+              <div className="glass-warm rounded-[3rem] border border-stone-800 shadow-xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-stone-800/60 flex items-center justify-between bg-stone-950/60">
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Verification Logs</span>
+                </div>
+                <div className="max-h-64 overflow-y-auto divide-y divide-stone-900/60">
+                  {verifyLogs.map((log) => (
+                    <div key={log.id} className="px-6 py-3 text-[11px] flex items-center justify-between">
+                      <div>
+                        <p className="font-black text-stone-100">#{log.report_id} · {log.report_type}</p>
+                        <p className="text-[10px] text-stone-500 uppercase tracking-[0.25em]">{log.channel}</p>
+                      </div>
+                      <div className="text-right text-[10px] font-black uppercase tracking-[0.25em]">
+                        <p className={log.decision === 'verified' ? 'text-emerald-400' : 'text-orange-400'}>{log.decision}</p>
+                        <p className="text-stone-500">{log.worker_id || '—'}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {verifyLogs.length === 0 && (
+                    <div className="px-6 py-4 text-[11px] text-stone-500">No verification activity recorded yet.</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="glass-warm rounded-[3rem] border border-stone-800 shadow-xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-stone-800/60 flex items-center justify-between bg-stone-950/60">
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Disputes</span>
+                </div>
+                <div className="max-h-64 overflow-y-auto divide-y divide-stone-900/60">
+                  {disputes.map((d) => (
+                    <div key={d.id} className="px-6 py-3 text-[11px]">
+                      <p className="font-black text-stone-100">Ticket #{d.id} · Log {d.log_id}</p>
+                      <p className="text-[10px] text-stone-500 mt-1">{d.message}</p>
+                      <p
+                        className={
+                          `text-[10px] font-black uppercase tracking-[0.25em] mt-1 ` +
+                          (d.status === 'open' ? 'text-orange-400' : 'text-emerald-400')
+                        }
+                      >
+                        {d.status}
+                      </p>
+                    </div>
+                  ))}
+                  {disputes.length === 0 && (
+                    <div className="px-6 py-4 text-[11px] text-stone-500">No disputes raised.</div>
+                  )}
+                </div>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

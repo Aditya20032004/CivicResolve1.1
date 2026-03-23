@@ -11,8 +11,10 @@ venv/
 env/
 ENV/
 
-# Data archives
+# Data archives and generated YOLO dataset
 data/archive/
+data/yolo_format/
+data/yolo_format/
 
 # Temporary files
 data/images/temp_*
@@ -20,12 +22,10 @@ data/images/temp_*
 # Training outputs
 ai_ml/runs/
 
-# Model weights (except trained models)
+# Model weights (all large)
 /*.pt
 yolo*.pt
-
-# Keep trained models
-!ai_ml/models/*.pt
+ai_ml/models/*.pt
 
 # Node.js
 node_modules/
@@ -40,3 +40,11 @@ frontend/build/
 frontend/dist/
 frontend/.next/
 frontend/out/
+
+# Next.js build outputs (frontend_4)
+frontend_4/.next/
+frontend_4/out/
+
+# Frontend large media
+frontend_4/public/video/
+frontend_4/public/**/*.mp4

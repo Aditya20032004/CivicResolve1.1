@@ -12,16 +12,22 @@ interface WorkerViewProps {
 
 const WorkerView: React.FC<WorkerViewProps> = ({ session }) => {
   const [tasks, setTasks] = useState<IncidentReport[]>([]);
+  const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [proofs, setProofs] = useState<Record<number, File>>({});
   const [previews, setPreviews] = useState<Record<number, string>>({});
   const [submitting, setSubmitting] = useState<number | null>(null);
+  const [banner, setBanner] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      const res = await api.get(endpoints.workflow.workerTasks(session.username));
-      setTasks(res.data);
+      const [tasksRes, profileRes] = await Promise.all([
+        api.get(endpoints.workflow.workerTasks(session.username)),
+        api.get(endpoints.workflow.workerProfile(session.username)),
+      ]);
+      setTasks(tasksRes.data);
+      setProfile(profileRes.data || null);
     } catch (err) {
       console.error(err);
     } finally {
@@ -50,12 +56,16 @@ const WorkerView: React.FC<WorkerViewProps> = ({ session }) => {
     formData.append('id', task.id.toString());
     formData.append('type', task.type);
     try {
-      await api.post(endpoints.workflow.complete, formData, {
+      const res = await api.post(endpoints.workflow.complete, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+      const msg = (res.data && res.data.message) || 'Resolution proof uploaded and processed.';
+      setBanner({ type: 'success', msg });
       fetchTasks();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      const msg = err?.response?.data?.error || 'Failed to submit resolution proof.';
+      setBanner({ type: 'error', msg });
     } finally {
       setSubmitting(null);
     }
@@ -63,6 +73,23 @@ const WorkerView: React.FC<WorkerViewProps> = ({ session }) => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-12 pb-20">
+      {banner && (
+        <div
+          className={`mt-8 px-4 py-3 rounded-2xl text-sm font-medium flex items-center justify-between ${
+            banner.type === 'success'
+              ? 'bg-emerald-500/10 border border-emerald-500/40 text-emerald-300'
+              : 'bg-red-500/10 border border-red-500/40 text-red-300'
+          }`}
+        >
+          <span>{banner.msg}</span>
+          <button
+            onClick={() => setBanner(null)}
+            className="ml-4 text-xs uppercase tracking-widest opacity-70 hover:opacity-100"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       <div className="flex items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-stone-50 tracking-tighter">My Dispatch</h1>
@@ -78,6 +105,23 @@ const WorkerView: React.FC<WorkerViewProps> = ({ session }) => {
           <RefreshCcw className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} />
         </motion.button>
       </div>
+
+      {profile && (
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="glass-warm rounded-2xl px-4 py-3 border border-stone-800 flex flex-col">
+            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-stone-500">Active Tasks</span>
+            <span className="text-xl font-black text-stone-50 mt-1">{profile.active_tasks} / {profile.max_tasks}</span>
+          </div>
+          <div className="glass-warm rounded-2xl px-4 py-3 border border-emerald-700/40 flex flex-col">
+            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-400">Reward Points</span>
+            <span className="text-xl font-black text-emerald-300 mt-1">{profile.reward_points}</span>
+          </div>
+          <div className="glass-warm rounded-2xl px-4 py-3 border border-red-700/40 flex flex-col">
+            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-red-400">Penalty Count</span>
+            <span className="text-xl font-black text-red-300 mt-1">{profile.penalty_points}</span>
+          </div>
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         {tasks.length === 0 ? (
@@ -137,7 +181,23 @@ const WorkerView: React.FC<WorkerViewProps> = ({ session }) => {
                         Anomaly Reference
                       </label>
                       <div className="aspect-video glass rounded-[3rem] overflow-hidden border border-white/5 relative shadow-inner group/ref">
-                        <img src={`${IMG_BASE_URL}/${task.images.original}`} alt="Issue" className="w-full h-full object-cover grayscale opacity-50 group-hover/ref:grayscale-0 group-hover/ref:opacity-100 transition-all duration-700" />
+                        {task.images?.resolved ? (
+                          <img
+                            src={`${IMG_BASE_URL}/${task.images.resolved}`}
+                            alt="Resolved (YOLO-verified) Issue"
+                            className="w-full h-full object-cover grayscale opacity-50 group-hover/ref:grayscale-0 group-hover/ref:opacity-100 transition-all duration-700"
+                          />
+                        ) : task.images?.original ? (
+                          <img
+                            src={`${IMG_BASE_URL}/${task.images.original}`}
+                            alt="Issue"
+                            className="w-full h-full object-cover grayscale opacity-50 group-hover/ref:grayscale-0 group-hover/ref:opacity-100 transition-all duration-700"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-stone-500">
+                            No reference image available
+                          </div>
+                        )}
                         <div className="absolute top-6 right-6 glass px-4 py-2 rounded-xl text-[10px] font-black text-white uppercase tracking-widest border border-white/10">Reported State</div>
                       </div>
                     </div>

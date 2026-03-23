@@ -17,8 +17,17 @@ sys.path.append(str(project_root))
 
 from ai_ml.utils.logger import setup_logger
 
+
 class CivicDatasetFilter:
-    def __init__(self):
+    def __init__(self, full_multiclass: bool = True):
+        """Prepare a YOLO dataset from the archived raw data.
+
+        When ``full_multiclass`` is True, all 10 original classes from
+        ``data/archive/config.yaml`` are kept with their original
+        indices. Previously this script only kept pothole and garbage
+        classes; that behaviour is no longer the default.
+        """
+
         # Initialize Logger
         self.logger = setup_logger("data_preparation")
         
@@ -34,9 +43,14 @@ class CivicDatasetFilter:
             # Output: Clean YOLO structure
             'yolo_data': self.project_root / "data" / "yolo_format"
         }
-        
-        # Target IDs (From your 10-class list)
-        self.target_class_ids = [1, 5] 
+
+        # Dataset config describing all classes
+        self.config_path = self.paths['raw_source'] / 'config.yaml'
+        self.full_multiclass = full_multiclass
+
+        # Legacy 2-class mapping (pothole/garbage) kept for reference.
+        # Not used when full_multiclass=True.
+        self.target_class_ids = [1, 5]
         self.new_class_mapping = {1: 0, 5: 1}
         
         self.logger.info(f"Project Root detected as: {self.project_root}")
@@ -105,7 +119,7 @@ class CivicDatasetFilter:
                     'label_content': new_content
                 })
 
-        self.logger.info(f"Found {len(valid_samples)} valid samples (Potholes/Garbage).")
+        self.logger.info(f"Found {len(valid_samples)} valid samples for training.")
         
         if len(valid_samples) == 0:
             self.logger.warning("Images found, but no labels matched IDs 1 or 5.")
@@ -123,26 +137,49 @@ class CivicDatasetFilter:
         self._create_yaml()
 
     def _filter_label_file(self, label_path):
+        """Return cleaned label content for a single image.
+
+        In full-multiclass mode we keep all valid label lines as-is,
+        preserving the original 0–9 class indices. In the legacy
+        binary mode we only keep pothole/garbage entries and remap
+        them to a compact 0/1 id space.
+        """
         try:
             with open(label_path, 'r') as f:
                 lines = f.readlines()
-            
+
+            if self.full_multiclass:
+                # Keep all non-empty, well-formed lines.
+                cleaned = []
+                for line in lines:
+                    parts = line.strip().split()
+                    if not parts:
+                        continue
+                    try:
+                        int(parts[0])  # validate class id is int
+                    except ValueError:
+                        continue
+                    cleaned.append(" ".join(parts))
+                return "\n".join(cleaned) if cleaned else None
+
+            # Legacy 2-class behaviour
             new_lines = []
             for line in lines:
                 parts = line.strip().split()
-                if not parts: continue
-                
+                if not parts:
+                    continue
+
                 try:
                     class_id = int(parts[0])
                 except ValueError:
-                    continue 
-                
+                    continue
+
                 if class_id in self.target_class_ids:
                     new_id = self.new_class_mapping[class_id]
                     new_lines.append(f"{new_id} {' '.join(parts[1:])}")
-            
+
             return "\n".join(new_lines) if new_lines else None
-            
+
         except Exception as e:
             self.logger.error(f"Error reading {label_path}: {e}")
             return None
@@ -165,22 +202,50 @@ class CivicDatasetFilter:
                 self.logger.error(f"Failed to copy {sample['img_path'].name}: {e}")
 
     def _create_yaml(self):
+        """Write dataset.yaml describing the prepared YOLO dataset."""
+
+        nc = None
+        names = None
+
+        if self.full_multiclass and self.config_path.exists():
+            # Load the original multi-class config to copy class names.
+            try:
+                with open(self.config_path, 'r') as f:
+                    base_cfg = yaml.safe_load(f) or {}
+                orig_names = base_cfg.get('names', {})
+                # names may be a dict {idx: name}
+                if isinstance(orig_names, dict):
+                    max_idx = max(int(k) for k in orig_names.keys())
+                    names = [orig_names[i] for i in range(max_idx + 1)]
+                    nc = len(names)
+                elif isinstance(orig_names, list):
+                    names = list(orig_names)
+                    nc = len(names)
+            except Exception as e:
+                self.logger.warning(f"Failed to read archive config.yaml, falling back to binary classes: {e}")
+
+        if not nc or not names:
+            # Fallback to legacy 2-class config
+            nc = 2
+            names = ['pothole', 'garbage']
+
         config = {
             'path': str(self.paths['yolo_data'].absolute()),
             'train': 'images/train',
             'val': 'images/val',
-            'nc': 2,
-            'names': ['pothole', 'garbage']
+            'nc': nc,
+            'names': names,
         }
         
         yaml_path = self.paths['yolo_data'] / 'dataset.yaml'
         with open(yaml_path, 'w') as f:
             yaml.dump(config, f, default_flow_style=False)
             
-        self.logger.info(f"Config created at {yaml_path}")
+        self.logger.info(f"Config created at {yaml_path} with {nc} classes")
 
 def main():
-    processor = CivicDatasetFilter()
+    # By default build the full 10-class dataset.
+    processor = CivicDatasetFilter(full_multiclass=True)
     processor.setup_output_directories()
     processor.process_data()
 

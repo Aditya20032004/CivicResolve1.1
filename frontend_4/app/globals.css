@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply antialiased text-slate-100 bg-[#030712];
     font-family: 'Plus Jakarta Sans', sans-serif;

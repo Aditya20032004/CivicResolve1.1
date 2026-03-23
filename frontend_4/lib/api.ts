@@ -20,11 +20,16 @@ export const endpoints = {
   },
   admin: {
     reports: '/admin/reports',
+    workers: '/admin/workers',
   },
   workflow: {
     assign: '/workflow/tasks/assign',
     workerTasks: (workerId: string) => `/workflow/worker/my-tasks/${workerId}`,
+    workerProfile: (workerId: string) => `/workflow/worker/profile/${workerId}`,
     complete: '/workflow/worker/complete',
     verify: '/workflow/verify/verify',
+    verifyLogs: '/workflow/verify/logs',
+    disputes: '/workflow/verify/disputes',
+    cameraSweep: '/workflow/verify/camera-sweep',
   },
 };

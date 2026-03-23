@@ -243,20 +243,97 @@ const LandingView: React.FC<LandingViewProps> = ({ onEnterPortal, onReportIssue 
   // Hover glow effect state
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
 
+  // Civic issue resolution workflow steps for roadmap section
+  const workflowSteps = [
+    {
+      id: '01',
+      title: 'Issue Captured',
+      subtitle: 'Citizen or camera spots a problem',
+      description:
+        'A resident submits a photo through the portal or a roadside camera node flags an anomaly in real-time.',
+      icon: AlertTriangle,
+      accent: 'from-amber-500/80 to-orange-500/60',
+    },
+    {
+      id: '02',
+      title: 'AI Detection & Labelling',
+      subtitle: 'YOLOv8 civic model in action',
+      description:
+        'Our trained YOLO model detects potholes, garbage, broken signs and more, tagging each frame with precise boxes and classes.',
+      icon: Cpu,
+      accent: 'from-violet-500/80 to-cyan-400/70',
+    },
+    {
+      id: '03',
+      title: 'Validation & De-duplication',
+      subtitle: 'Smart checks on reports',
+      description:
+        'Location-aware validators merge duplicate reports, verify GPS context and ensure only high-quality issues enter the queue.',
+      icon: ShieldCheck,
+      accent: 'from-emerald-500/80 to-teal-400/70',
+    },
+    {
+      id: '04',
+      title: 'Assignment to Worker',
+      subtitle: 'Optimised task routing',
+      description:
+        'The worker workflow engine assigns the incident to the nearest available field worker with the right capabilities.',
+      icon: Users,
+      accent: 'from-sky-500/80 to-indigo-500/70',
+    },
+    {
+      id: '05',
+      title: 'On-ground Fix & Proof',
+      subtitle: 'Worker closes the loop',
+      description:
+        'Workers upload an on-site photo after fixing the issue. The system stores both the original and resolved evidence.',
+      icon: CheckCircle2,
+      accent: 'from-emerald-500/80 to-lime-400/70',
+    },
+    {
+      id: '06',
+      title: 'Dual Verification & Closure',
+      subtitle: 'Camera + AI sign-off',
+      description:
+        'Verification workflows compare the worker upload with latest camera frames and model confidence before marking it resolved.',
+      icon: Shield,
+      accent: 'from-cyan-500/80 to-violet-500/70',
+    },
+  ];
+
   return (
-    <div className="min-h-screen mesh-gradient-cyber selection:bg-violet-500/30 overflow-x-hidden text-slate-100 noise-overlay" onMouseMove={handleMouseMove}>
+    <div
+      className="relative min-h-screen mesh-gradient-cyber selection:bg-violet-500/30 overflow-x-hidden text-slate-100 noise-overlay"
+      onMouseMove={handleMouseMove}
+    >
+      {/* Background video layer (behind content but above body) */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <video
+          className="h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+        >
+          <source src="/video/civic_city.mp4" type="video/mp4" />
+        </video>
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/80 via-black/70 to-black/90" />
+      </div>
+
       {/* Cursor Glow */}
-      <div 
-        className="fixed w-[500px] h-[500px] rounded-full pointer-events-none z-0 opacity-30 blur-[100px] transition-transform duration-300"
-        style={{ 
+      <div
+        className="fixed w-[500px] h-[500px] rounded-full pointer-events-none z-10 opacity-30 blur-[100px] transition-transform duration-300"
+        style={{
           background: 'radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%)',
-          left: mousePosition.x - 250, 
-          top: mousePosition.y - 250 
+          left: mousePosition.x - 250,
+          top: mousePosition.y - 250,
         }}
       />
-      
+
       {/* Floating Particles */}
-      <FloatingParticles />
+      <div className="relative z-10">
+        <FloatingParticles />
+      </div>
       
       {/* Background Orbs */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
@@ -607,6 +684,97 @@ const LandingView: React.FC<LandingViewProps> = ({ onEnterPortal, onReportIssue 
                 className="absolute -bottom-10 -right-10 w-40 h-40 border border-white/10 rounded-full" 
               />
             </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Civic Issue Resolution Roadmap */}
+      <section className="py-32 px-6 relative z-10">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[1.2fr,1fr] gap-16 items-start">
+          {/* Left: Intro text */}
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: '-100px' }}
+            className="space-y-8"
+          >
+            <div className="inline-flex items-center gap-3 px-4 py-2 glass-light rounded-full text-[10px] font-black uppercase tracking-[0.3em] text-violet-300">
+              <Sparkles className="w-4 h-4 text-cyan-400" />
+              <span>Issue → Insight → Impact</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tighter text-white leading-tight">
+              A calm, step-by-step
+              <br />
+              <span className="gradient-text-animated">civic resolution roadmap</span>
+            </h2>
+            <p className="text-slate-400 text-lg max-w-xl font-medium">
+              Follow how every pothole, garbage patch or broken sign moves from raw image to verified resolution through the
+              CivicResolve pipeline.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs font-black uppercase tracking-[0.25em] text-slate-500">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.7)]" />
+                <span>AI-Assisted Triage</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
+                <span>Human-in-the-Loop Verification</span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Right: Vertical roadmap timeline */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-100px' }}
+            className="relative glass-cyber rounded-[2.5rem] border border-violet-500/20 p-8 md:p-10 overflow-hidden"
+          >
+            {/* Vertical line */}
+            <div className="absolute left-8 top-10 bottom-10 w-px bg-gradient-to-b from-violet-500/40 via-slate-700/40 to-emerald-400/40" />
+
+            <div className="space-y-8 relative">
+              {workflowSteps.map((step, index) => (
+                <motion.div
+                  key={step.id}
+                  initial={{ opacity: 0, x: 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.08 }}
+                  className="relative pl-14"
+                >
+                  {/* Dot + icon */}
+                  <div className="absolute left-4 top-2 flex items-center justify-center">
+                    <div className="w-7 h-7 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center relative">
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-violet-500/40 to-cyan-400/40 blur-md opacity-60" />
+                      <step.icon className="w-4 h-4 text-slate-50 relative z-10" />
+                    </div>
+                  </div>
+
+                  <div className="glass-card rounded-2xl p-4 md:p-5 border border-slate-700/60 bg-slate-900/70">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+                        {step.id}
+                      </span>
+                      <div
+                        className={`px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.25em] bg-gradient-to-r ${step.accent} text-slate-50`}
+                      >
+                        Stage
+                      </div>
+                    </div>
+                    <h3 className="text-sm md:text-base font-black text-slate-50 mb-1">
+                      {step.title}
+                    </h3>
+                    <p className="text-[11px] md:text-xs font-bold text-slate-400 mb-2">
+                      {step.subtitle}
+                    </p>
+                    <p className="text-[11px] md:text-xs text-slate-500 leading-relaxed">
+                      {step.description}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
         </div>
       </section>

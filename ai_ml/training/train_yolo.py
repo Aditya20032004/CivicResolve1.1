@@ -30,7 +30,7 @@ class CivicModelTrainer:
         self.paths['visualizations'].mkdir(parents=True, exist_ok=True)
         self.device = '0' if torch.cuda.is_available() else 'cpu'
 
-    def train(self, epochs=50, imgsz=416, batch=8):
+    def train(self, epochs=50, imgsz=640, batch=8):
         if not self.paths['dataset'].exists():
             self.logger.error(f"Dataset config missing: {self.paths['dataset']}")
             return
@@ -39,7 +39,7 @@ class CivicModelTrainer:
         self.logger.info(f"Image size: {imgsz}, Batch size: {batch}")
         
         try:
-            model = YOLO('yolov8n.pt') 
+            model = YOLO('yolov8m.pt') 
             
             # Train
             results = model.train(
@@ -51,7 +51,9 @@ class CivicModelTrainer:
                 project=str(self.paths['runs']),
                 name='civic_resolve',
                 exist_ok=True,
-                verbose=True
+                verbose=True,
+                lr0=0.005,
+                cos_lr=True,
             )
             
             # Extract and log training metrics
@@ -266,9 +268,9 @@ class CivicModelTrainer:
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", type=int, default=50)
-    parser.add_argument("--imgsz", type=int, default=416, help="Image size for training")
-    parser.add_argument("--batch", type=int, default=8, help="Batch size")
+    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--imgsz", type=int, default=640, help="Image size for training")
+    parser.add_argument("--batch", type=int, default=4, help="Batch size")
     args = parser.parse_args()
 
     trainer = CivicModelTrainer()

@@ -20,6 +20,13 @@ def create_app(config_name='default'):
     CORS(app)
     db.init_app(app)
 
+    # Ensure tables exist and bootstrap worker pool
+    from workflow.worker_workflow import bootstrap_workers
+
+    with app.app_context():
+        db.create_all()
+        bootstrap_workers()
+
     # --- 1. ROOT ROUTE (To fix 404 on home page) ---
     @app.route('/')
     def index():
