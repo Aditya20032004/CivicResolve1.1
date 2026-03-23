@@ -1,7 +1,0 @@
-names:
-- pothole
-- garbage
-nc: 2
-path: /home/aditya/mlproj/CivicResolve/data/yolo_format
-train: images/train
-val: images/val
