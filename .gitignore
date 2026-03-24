@@ -23,6 +23,7 @@ node_modules/
 data/images/temp_*
 
 # Training outputs
+ai_ml/runs/civic_resolve
 
 # Model weights (all large)
 /*.pt
