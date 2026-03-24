@@ -16,6 +16,9 @@ data/archive/
 data/yolo_format/
 data/yolo_format/
 
+# NPM
+node_modules/
+
 # Temporary files
 data/images/temp_*
 
