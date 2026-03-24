@@ -1,5 +1,18 @@
 from flask import Blueprint, jsonify, request
-from backend.models import db, PotholeReport, GarbageReport, Worker
+from backend.models import (
+    db,
+    PotholeReport,
+    GarbageReport,
+    DamagedRoadReport,
+    IllegalParkingReport,
+    BrokenSignReport,
+    FallenTreeReport,
+    VandalismReport,
+    DeadAnimalReport,
+    DamagedConcreteReport,
+    DamagedWiresReport,
+    Worker,
+)
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -19,8 +32,27 @@ def admin_index():
 def get_all_reports():
     potholes = PotholeReport.query.all()
     garbage = GarbageReport.query.all()
-    
-    all_reports = [p.to_dict() for p in potholes] + [g.to_dict() for g in garbage]
+    damaged_roads = DamagedRoadReport.query.all()
+    illegal_parking = IllegalParkingReport.query.all()
+    broken_signs = BrokenSignReport.query.all()
+    fallen_trees = FallenTreeReport.query.all()
+    vandalism = VandalismReport.query.all()
+    dead_animals = DeadAnimalReport.query.all()
+    damaged_concrete = DamagedConcreteReport.query.all()
+    damaged_wires = DamagedWiresReport.query.all()
+
+    all_reports = (
+        [p.to_dict() for p in potholes]
+        + [g.to_dict() for g in garbage]
+        + [r.to_dict() for r in damaged_roads]
+        + [r.to_dict() for r in illegal_parking]
+        + [r.to_dict() for r in broken_signs]
+        + [r.to_dict() for r in fallen_trees]
+        + [r.to_dict() for r in vandalism]
+        + [r.to_dict() for r in dead_animals]
+        + [r.to_dict() for r in damaged_concrete]
+        + [r.to_dict() for r in damaged_wires]
+    )
     all_reports.sort(key=lambda x: x['created_at'], reverse=True)
     
     return jsonify(all_reports), 200
@@ -29,11 +61,40 @@ def get_all_reports():
 def get_stats():
     p_count = PotholeReport.query.count()
     g_count = GarbageReport.query.count()
-    
+    dr_count = DamagedRoadReport.query.count()
+    ip_count = IllegalParkingReport.query.count()
+    bs_count = BrokenSignReport.query.count()
+    ft_count = FallenTreeReport.query.count()
+    v_count = VandalismReport.query.count()
+    da_count = DeadAnimalReport.query.count()
+    dc_count = DamagedConcreteReport.query.count()
+    dw_count = DamagedWiresReport.query.count()
+
+    total = (
+        p_count
+        + g_count
+        + dr_count
+        + ip_count
+        + bs_count
+        + ft_count
+        + v_count
+        + da_count
+        + dc_count
+        + dw_count
+    )
+
     return jsonify({
-        'total': p_count + g_count,
+        'total': total,
         'potholes': p_count,
-        'garbage': g_count
+        'garbage': g_count,
+        'damaged_road': dr_count,
+        'illegal_parking': ip_count,
+        'broken_sign': bs_count,
+        'fallen_tree': ft_count,
+        'vandalism': v_count,
+        'dead_animal': da_count,
+        'damaged_concrete': dc_count,
+        'damaged_wires': dw_count,
     }), 200
 
 

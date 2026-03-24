@@ -65,6 +65,198 @@ class GarbageReport(BaseReport):
         }
 
 
+class DamagedRoadReport(BaseReport):
+    """Reports for generic damaged road issues (non-pothole)."""
+
+    __tablename__ = 'damaged_roads'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'type': 'damaged_road',
+            'status': self.status,
+            'assigned_to': self.assigned_worker_id,
+            'location': {
+                'lat': self.latitude,
+                'lng': self.longitude,
+                'address': self.address,
+            },
+            'images': {
+                'original': self.image_filename,
+                'resolved': self.resolved_image,
+            },
+            'created_at': self.created_at.isoformat(),
+        }
+
+
+class IllegalParkingReport(BaseReport):
+    """Reports for illegal parking issues."""
+
+    __tablename__ = 'illegal_parking'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'type': 'illegal_parking',
+            'status': self.status,
+            'assigned_to': self.assigned_worker_id,
+            'location': {
+                'lat': self.latitude,
+                'lng': self.longitude,
+                'address': self.address,
+            },
+            'images': {
+                'original': self.image_filename,
+                'resolved': self.resolved_image,
+            },
+            'created_at': self.created_at.isoformat(),
+        }
+
+
+class BrokenSignReport(BaseReport):
+    """Reports for broken road sign issues."""
+
+    __tablename__ = 'broken_signs'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'type': 'broken_sign',
+            'status': self.status,
+            'assigned_to': self.assigned_worker_id,
+            'location': {
+                'lat': self.latitude,
+                'lng': self.longitude,
+                'address': self.address,
+            },
+            'images': {
+                'original': self.image_filename,
+                'resolved': self.resolved_image,
+            },
+            'created_at': self.created_at.isoformat(),
+        }
+
+
+class FallenTreeReport(BaseReport):
+    """Reports for fallen tree incidents."""
+
+    __tablename__ = 'fallen_trees'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'type': 'fallen_tree',
+            'status': self.status,
+            'assigned_to': self.assigned_worker_id,
+            'location': {
+                'lat': self.latitude,
+                'lng': self.longitude,
+                'address': self.address,
+            },
+            'images': {
+                'original': self.image_filename,
+                'resolved': self.resolved_image,
+            },
+            'created_at': self.created_at.isoformat(),
+        }
+
+
+class VandalismReport(BaseReport):
+    """Reports for vandalism-related civic issues."""
+
+    __tablename__ = 'vandalism'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'type': 'vandalism',
+            'status': self.status,
+            'assigned_to': self.assigned_worker_id,
+            'location': {
+                'lat': self.latitude,
+                'lng': self.longitude,
+                'address': self.address,
+            },
+            'images': {
+                'original': self.image_filename,
+                'resolved': self.resolved_image,
+            },
+            'created_at': self.created_at.isoformat(),
+        }
+
+
+class DeadAnimalReport(BaseReport):
+    """Reports for dead animal pollution issues."""
+
+    __tablename__ = 'dead_animals'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'type': 'dead_animal',
+            'status': self.status,
+            'assigned_to': self.assigned_worker_id,
+            'location': {
+                'lat': self.latitude,
+                'lng': self.longitude,
+                'address': self.address,
+            },
+            'images': {
+                'original': self.image_filename,
+                'resolved': self.resolved_image,
+            },
+            'created_at': self.created_at.isoformat(),
+        }
+
+
+class DamagedConcreteReport(BaseReport):
+    """Reports for damaged concrete structures."""
+
+    __tablename__ = 'damaged_concrete'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'type': 'damaged_concrete',
+            'status': self.status,
+            'assigned_to': self.assigned_worker_id,
+            'location': {
+                'lat': self.latitude,
+                'lng': self.longitude,
+                'address': self.address,
+            },
+            'images': {
+                'original': self.image_filename,
+                'resolved': self.resolved_image,
+            },
+            'created_at': self.created_at.isoformat(),
+        }
+
+
+class DamagedWiresReport(BaseReport):
+    """Reports for damaged electric wires and poles."""
+
+    __tablename__ = 'damaged_wires'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'type': 'damaged_wires',
+            'status': self.status,
+            'assigned_to': self.assigned_worker_id,
+            'location': {
+                'lat': self.latitude,
+                'lng': self.longitude,
+                'address': self.address,
+            },
+            'images': {
+                'original': self.image_filename,
+                'resolved': self.resolved_image,
+            },
+            'created_at': self.created_at.isoformat(),
+        }
+
+
 class Worker(db.Model):
     __tablename__ = 'workers'
 

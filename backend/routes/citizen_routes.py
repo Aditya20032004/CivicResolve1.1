@@ -4,7 +4,19 @@ import os
 import uuid
 import cv2
 from pathlib import Path
-from backend.models import db, PotholeReport, GarbageReport
+from backend.models import (
+    db,
+    PotholeReport,
+    GarbageReport,
+    DamagedRoadReport,
+    IllegalParkingReport,
+    BrokenSignReport,
+    FallenTreeReport,
+    VandalismReport,
+    DeadAnimalReport,
+    DamagedConcreteReport,
+    DamagedWiresReport,
+)
 from backend.utils.issue_validator import get_validator
 from backend.utils.severity_classifier import classify_issue_from_results
 from workflow.worker_workflow import assign_report_to_worker, _haversine_km
@@ -30,19 +42,70 @@ def _normalize_issue_type(label: str | None) -> str | None:
     key = label.strip().lower()
 
     mapping = {
-        # Garbage-related labels
-        "garbage": "garbage",
-        "trash": "garbage",
-        "litter": "garbage",
-        "littering/garbage on public places": "garbage",
-        "vandalism issues": "garbage",
-        # Pothole-related labels
+        # 0: Damaged Road issues
+        "damaged road issues": "damaged_road",
+        "damaged road issue": "damaged_road",
+        "road damage": "damaged_road",
+
+        # 1: Pothole Issues
+        "pothole issues": "pothole",
         "pothole": "pothole",
         "potholes": "pothole",
         "potholes and road cracks": "pothole",
+
+        # 2: Illegal Parking Issues
+        "illegal parking issues": "illegal_parking",
+        "illegal parking": "illegal_parking",
+
+        # 3: Broken Road Sign Issues
+        "broken road sign issues": "broken_sign",
+        "broken road sign": "broken_sign",
+        "broken sign": "broken_sign",
+
+        # 4: Fallen trees
+        "fallen trees": "fallen_tree",
+        "fallen tree": "fallen_tree",
+
+        # 5: Littering/Garbage on Public Places
+        "littering/garbage on public places": "garbage",
+        "garbage": "garbage",
+        "trash": "garbage",
+        "litter": "garbage",
+
+        # 6: Vandalism Issues
+        "vandalism issues": "vandalism",
+        "vandalism": "vandalism",
+
+        # 7: Dead Animal Pollution
+        "dead animal pollution": "dead_animal",
+        "dead animal": "dead_animal",
+
+        # 8: Damaged concrete structures
+        "damaged concrete structures": "damaged_concrete",
+        "damaged concrete": "damaged_concrete",
+
+        # 9: Damaged Electric wires and poles
+        "damaged electric wires and poles": "damaged_wires",
+        "damaged wires": "damaged_wires",
+        "damaged electric wires": "damaged_wires",
     }
 
     return mapping.get(key, key)
+
+
+# Map normalized incident types to their SQLAlchemy models
+ISSUE_MODEL_MAP = {
+    "damaged_road": DamagedRoadReport,
+    "pothole": PotholeReport,
+    "illegal_parking": IllegalParkingReport,
+    "broken_sign": BrokenSignReport,
+    "fallen_tree": FallenTreeReport,
+    "garbage": GarbageReport,
+    "vandalism": VandalismReport,
+    "dead_animal": DeadAnimalReport,
+    "damaged_concrete": DamagedConcreteReport,
+    "damaged_wires": DamagedWiresReport,
+}
 
 
 # Lazy load YOLO model for validator
@@ -72,13 +135,14 @@ def _find_nearby_incident(issue_type, lat, lng, max_distance_km=0.08):
     if lat is None or lng is None:
         return None
 
-    if issue_type == 'pothole':
-        query = PotholeReport.query
-    else:
-        query = GarbageReport.query
+    model_cls = ISSUE_MODEL_MAP.get(issue_type)
+    if model_cls is None:
+        return None
+
+    query = model_cls.query
 
     # Consider only non-verified incidents as potential duplicates.
-    candidates = query.filter(~PotholeReport.status.in_(['verified']) if issue_type == 'pothole' else ~GarbageReport.status.in_(['verified'])).all()
+    candidates = query.filter(~model_cls.status.in_(['verified'])).all()
 
     nearest = None
     nearest_dist = max_distance_km
@@ -173,8 +237,8 @@ def submit_report():
     normalized_issue_type = _normalize_issue_type(issue_type)
     normalized_auto_type = _normalize_issue_type(auto_type) if auto_type else None
 
-    if normalized_issue_type not in ['pothole', 'garbage']:
-        print(f"❌ Invalid or undetected type: {issue_type}")
+    if normalized_issue_type not in ISSUE_MODEL_MAP:
+        print(f"❌ Invalid or unsupported type: {issue_type}")
         os.remove(save_path)
         return jsonify({
             'error': 'Could not determine issue type from image',
@@ -201,20 +265,35 @@ def submit_report():
             'validation_status': validation['decision'],
         }), 200
 
-    new_report = None
+    model_cls = ISSUE_MODEL_MAP.get(normalized_issue_type)
+    if model_cls is None:
+        os.remove(save_path)
+        return jsonify({
+            'error': 'Unsupported issue type',
+            'normalized_type': normalized_issue_type,
+        }), 400
+
+    # Preserve existing extra fields for pothole / garbage; others use base fields only.
     if normalized_issue_type == 'pothole':
         severity = auto_severity or request.form.get('severity', 'medium')
-        new_report = PotholeReport(
+        new_report = model_cls(
             image_filename=filename,
             severity=severity,
             latitude=lat,
             longitude=lng,
             address=request.form.get('address'),
         )
-    else:
-        new_report = GarbageReport(
+    elif normalized_issue_type == 'garbage':
+        new_report = model_cls(
             image_filename=filename,
             garbage_type=request.form.get('garbage_type', 'mixed'),
+            latitude=lat,
+            longitude=lng,
+            address=request.form.get('address'),
+        )
+    else:
+        new_report = model_cls(
+            image_filename=filename,
             latitude=lat,
             longitude=lng,
             address=request.form.get('address'),
@@ -231,7 +310,7 @@ def submit_report():
     return jsonify({
         'message': 'Report saved',
         'id': new_report.id,
-        'detected_type': issue_type,
+        'detected_type': normalized_issue_type,
         'auto_severity': auto_severity,
         'trust_score': validation['score'],
         'validation_status': validation['decision'],
