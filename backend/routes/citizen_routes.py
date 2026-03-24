@@ -12,6 +12,39 @@ from ultralytics import YOLO
 
 citizen_bp = Blueprint('citizen', __name__)
 
+
+def _normalize_issue_type(label: str | None) -> str | None:
+    """Map various human-readable labels to canonical internal types.
+
+    The backend currently supports two incident types at the database
+    level: "pothole" and "garbage". User inputs and model outputs
+    (e.g. from the civic issues dataset) can use longer phrases such
+    as "Littering/Garbage on Public Places". This helper maps such
+    phrases to the canonical types while leaving unknown labels as-is
+    so we can still surface a clear error when truly unsupported.
+    """
+
+    if not label:
+        return None
+
+    key = label.strip().lower()
+
+    mapping = {
+        # Garbage-related labels
+        "garbage": "garbage",
+        "trash": "garbage",
+        "litter": "garbage",
+        "littering/garbage on public places": "garbage",
+        "vandalism issues": "garbage",
+        # Pothole-related labels
+        "pothole": "pothole",
+        "potholes": "pothole",
+        "potholes and road cracks": "pothole",
+    }
+
+    return mapping.get(key, key)
+
+
 # Lazy load YOLO model for validator
 BASE_DIR = Path(__file__).resolve().parents[2]
 MODEL_PATH = BASE_DIR / "ai_ml" / "models" / "best_civic_model.pt"
@@ -136,7 +169,11 @@ def submit_report():
     if not issue_type and auto_type:
         issue_type = auto_type
 
-    if issue_type not in ['pothole', 'garbage']:
+    # Normalize both user-provided and auto-detected labels to internal types
+    normalized_issue_type = _normalize_issue_type(issue_type)
+    normalized_auto_type = _normalize_issue_type(auto_type) if auto_type else None
+
+    if normalized_issue_type not in ['pothole', 'garbage']:
         print(f"❌ Invalid or undetected type: {issue_type}")
         os.remove(save_path)
         return jsonify({
@@ -148,16 +185,16 @@ def submit_report():
     auto_severity = classification.get('severity') if classification else None
 
     # --- Basic deduplication: check if an open incident already exists nearby ---
-    existing = _find_nearby_incident(issue_type, lat, lng)
+    existing = _find_nearby_incident(normalized_issue_type, lat, lng)
     if existing is not None:
         # We already saved the annotated image; it's safe to keep or
         # could be cleaned up here. To avoid confusing duplicates in
         # the DB, we simply link the citizen to the existing incident.
-        print(f"ℹ️ Deduplicated report: linking to existing {issue_type} #{existing.id} at ~{existing.latitude},{existing.longitude}")
+        print(f"ℹ️ Deduplicated report: linking to existing {normalized_issue_type} #{existing.id} at ~{existing.latitude},{existing.longitude}")
         return jsonify({
             'message': 'Similar issue already reported nearby; linking to existing incident.',
             'id': existing.id,
-            'detected_type': issue_type,
+            'detected_type': normalized_issue_type,
             'auto_severity': auto_severity,
             'duplicate_of': existing.id,
             'trust_score': validation['score'],
@@ -165,7 +202,7 @@ def submit_report():
         }), 200
 
     new_report = None
-    if issue_type == 'pothole':
+    if normalized_issue_type == 'pothole':
         severity = auto_severity or request.form.get('severity', 'medium')
         new_report = PotholeReport(
             image_filename=filename,
