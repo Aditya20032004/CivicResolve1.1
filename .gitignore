@@ -23,7 +23,6 @@ node_modules/
 data/images/temp_*
 
 # Training outputs
-ai_ml/runs/
 
 # Model weights (all large)
 /*.pt
