@@ -23,7 +23,13 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onBack }) => {
       if (username === 'admin' && password === 'admin123') {
         onLogin({ username: 'admin', role: 'Admin', displayName: 'Administrator' });
       } else if (username === 'worker' && password === 'fixit') {
-        onLogin({ username: 'worker_01', role: 'Worker', displayName: 'Maintenance Crew 01' });
+        // Backwards-compatible demo login: maps generic "worker" to
+        // a real worker ID in the pool so existing flows keep working.
+        onLogin({ username: 'worker_001', role: 'Worker', displayName: 'Maintenance Crew 001' });
+      } else if (username.startsWith('worker_') && password === 'fixit') {
+        // New behaviour: workers log in with their actual worker ID
+        // (e.g. worker_001, worker_002) and a shared password.
+        onLogin({ username, role: 'Worker', displayName: `Field Worker ${username}` });
       } else if (username === 'cam' && password === 'smartcity') {
         onLogin({ username: 'cam_node_01', role: 'Camera', displayName: 'Bhopal Node 01' });
       } else {

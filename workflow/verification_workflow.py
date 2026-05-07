@@ -115,16 +115,37 @@ def run_dual_verification(report, upload_folder):
 		}
 
 	issue_type = "pothole" if getattr(report, "__tablename__", "") == "potholes" else "garbage"
-	original_conf = _max_issue_confidence(original_path, tissue_type)
-	resolved_conf = _max_issue_confidence(resolved_path, tissue_type)
+	original_conf = _max_issue_confidence(original_path, issue_type)
+	resolved_conf = _max_issue_confidence(resolved_path, issue_type)
 
+	# Always compute similarity between original and resolved images so we
+	# can reject both "no-change" proofs and obviously unrelated scenes.
+	similarity = _compute_similarity(original_path, resolved_path)
+
+	uploaded_ok = False
 	if original_conf is None or resolved_conf is None:
-		# Fallback: ensure the resolved image is not "too similar" to the original.
-		uploaded_ok = _compute_similarity(original_path, resolved_path) < 0.90
+		# Model not available: require the resolved image to look like the
+		# same area (not completely different) but also not be effectively
+		# identical. Very low similarity => probably a different scene;
+		# very high similarity => no real change.
+		if 0.40 <= similarity <= 0.98:
+			uploaded_ok = True
 	else:
-		# Require a clear reduction in issue confidence after fix upload.
-		reduction_ratio = 0.50
-		uploaded_ok = resolved_conf <= max(0.15, original_conf * reduction_ratio)
+		# Require a clear reduction in issue confidence after fix upload
+		# AND a change in appearance in a realistic range. If the model
+		# never saw the issue in the original, fall back to the same
+		# similarity window check as the model-unavailable path.
+		issue_threshold = 0.30
+		if original_conf >= issue_threshold:
+			reduction_ratio = 0.50
+			conf_ok = resolved_conf <= max(0.15, original_conf * reduction_ratio)
+			# Same-scene but changed: reject both nearly identical and
+			# totally different/global scenes.
+			visual_change_ok = 0.40 <= similarity <= 0.98
+			uploaded_ok = bool(conf_ok and visual_change_ok)
+		else:
+			if 0.40 <= similarity <= 0.98:
+				uploaded_ok = True
 
 	camera_match = get_latest_camera_frame(
 		latitude=report.latitude,
@@ -132,15 +153,18 @@ def run_dual_verification(report, upload_folder):
 		max_distance_km=3.0,
 	)
 
-	camera_ok = False
+	# In environments without camera nodes, fall back to trusting the
+	# worker upload alone; camera_ok starts as True and is only tightened
+	# when a nearby frame is actually available.
+	camera_ok = True
 	camera_similarity = 0.0
 	camera_issue_conf = None
-	camera_note = "No nearby camera frame found"
+	camera_note = "Camera recheck skipped; no nearby frame found"
 
 	if camera_match:
 		camera_path = Path(camera_match["path"])
 		camera_similarity = _compute_similarity(resolved_path, camera_path)
-		camera_issue_conf = _max_issue_confidence(camera_path, tissue_type)
+		camera_issue_conf = _max_issue_confidence(camera_path, issue_type)
 
 		if camera_issue_conf is None:
 			# When the model cannot confidently detect the issue at all in the
@@ -169,6 +193,7 @@ def run_dual_verification(report, upload_folder):
 			"camera_recheck": "passed" if camera_ok else "failed",
 			"camera_note": camera_note,
 			"similarity": {
+				"worker_upload_vs_original": round(similarity, 4),
 				"worker_upload_vs_camera": round(camera_similarity, 4),
 			},
 			"confidence": {

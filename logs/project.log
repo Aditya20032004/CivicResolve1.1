@@ -4535,3 +4535,140 @@
 2026-03-23 12:17:17 - model_trainer - INFO - 
 📁 All visualizations saved in: /home/aditya/mlproj/CivicResolvev1.1/ai_ml/runs/visualizations
 2026-03-23 12:17:17 - model_trainer - INFO - ============================================================
+2026-03-30 11:09:33 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-30 11:09:33 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=10, finetune_epochs=40, imgsz=640, batch=8, freeze_layers=10
+2026-03-30 11:09:33 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 11:09:33 - yolo_two_stage_trainer - INFO - 🎯 STAGE 1: Head-focused training (frozen backbone)
+2026-03-30 11:09:33 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 11:15:32 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-30 11:15:32 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=10, finetune_epochs=40, imgsz=640, batch=8, freeze_layers=10
+2026-03-30 11:15:32 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 11:15:32 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-03-30 11:15:32 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 12:59:23 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-30 12:59:23 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=10, finetune_epochs=40, imgsz=640, batch=8, freeze_layers=10
+2026-03-30 12:59:23 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 12:59:23 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-03-30 12:59:23 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 15:29:49 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 15:29:49 - yolo_two_stage_trainer - INFO - 🧠 STAGE 2: Full-model fine-tuning
+2026-03-30 15:29:49 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 15:29:49 - yolo_two_stage_trainer - ERROR - Two-stage YOLO training failed: 'model'
+2026-03-30 16:11:48 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-30 16:11:48 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=1, finetune_epochs=1, imgsz=640, batch=4, freeze_layers=10
+2026-03-30 16:11:48 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 16:11:48 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-03-30 16:11:48 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 16:19:16 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-30 16:19:16 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=1, finetune_epochs=1, imgsz=640, batch=4, freeze_layers=10
+2026-03-30 16:19:16 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 16:19:16 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-03-30 16:19:16 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 16:21:23 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-30 16:21:23 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=1, finetune_epochs=1, imgsz=640, batch=64, freeze_layers=10
+2026-03-30 16:21:23 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 16:21:23 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-03-30 16:21:23 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 16:22:27 - yolo_two_stage_trainer - ERROR - Two-stage YOLO training failed: CUDA out of memory. Tried to allocate 150.00 MiB. GPU 0 has a total capacity of 5.63 GiB of which 156.31 MiB is free. Including non-PyTorch memory, this process has 5.30 GiB memory in use. Of the allocated memory 5.02 GiB is allocated by PyTorch, and 146.71 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+2026-03-30 16:23:18 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-30 16:23:18 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=1, finetune_epochs=1, imgsz=640, batch=32, freeze_layers=10
+2026-03-30 16:23:18 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 16:23:18 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-03-30 16:23:18 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 16:42:54 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 16:42:54 - yolo_two_stage_trainer - INFO - 🧠 STAGE 2: Full-model fine-tuning
+2026-03-30 16:42:54 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 16:42:54 - yolo_two_stage_trainer - ERROR - Two-stage YOLO training failed: 'model'
+2026-03-30 16:48:38 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-30 16:48:38 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=0, finetune_epochs=1, imgsz=640, batch=8, freeze_layers=10
+2026-03-30 16:48:38 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 16:48:38 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-03-30 16:48:38 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 17:21:27 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-30 17:21:27 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=10, finetune_epochs=40, imgsz=640, batch=8, freeze_layers=10
+2026-03-30 17:21:28 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 17:21:28 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-03-30 17:21:28 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 18:21:24 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-30 18:21:24 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=10, finetune_epochs=40, imgsz=640, batch=8, freeze_layers=10
+2026-03-30 18:21:24 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 18:21:24 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-03-30 18:21:24 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 18:36:15 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-30 18:36:15 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=10, finetune_epochs=40, imgsz=640, batch=8, freeze_layers=10
+2026-03-30 18:36:15 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 18:36:15 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-03-30 18:36:15 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 18:36:26 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-30 18:36:26 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=10, finetune_epochs=40, imgsz=640, batch=8, freeze_layers=10
+2026-03-30 18:36:27 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 18:36:27 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-03-30 18:36:27 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 18:36:50 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-30 18:36:50 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=10, finetune_epochs=40, imgsz=640, batch=8, freeze_layers=10
+2026-03-30 18:36:50 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 18:36:50 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-03-30 18:36:50 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-30 21:05:09 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-30 21:05:09 - yolo_two_stage_trainer - INFO - 🧠 STAGE 2: Full-model fine-tuning
+2026-03-30 21:05:09 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-31 20:23:58 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-31 20:23:58 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=10, finetune_epochs=40, imgsz=640, batch=8, freeze_layers=10
+2026-03-31 20:23:58 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-31 20:23:58 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-03-31 20:23:58 - yolo_two_stage_trainer - INFO - ============================================================
+2026-03-31 20:44:14 - yolo_two_stage_trainer - INFO - Device: 0
+2026-03-31 20:44:14 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=10, finetune_epochs=40, imgsz=640, batch=8, freeze_layers=10
+2026-03-31 20:44:14 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-03-31 20:44:14 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-03-31 20:44:14 - yolo_two_stage_trainer - INFO - ============================================================
+2026-04-01 01:05:12 - yolo_two_stage_trainer - INFO - Device: 0
+2026-04-01 01:05:12 - yolo_two_stage_trainer - INFO - Two-stage YOLO fine-tune: head_epochs=10, finetune_epochs=40, imgsz=640, batch=8, freeze_layers=10
+2026-04-01 01:05:12 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-04-01 01:05:12 - yolo_two_stage_trainer - INFO - STAGE 1: Head-focused training (frozen backbone)
+2026-04-01 01:05:12 - yolo_two_stage_trainer - INFO - ============================================================
+2026-04-01 03:35:11 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-04-01 03:35:11 - yolo_two_stage_trainer - INFO - 🧠 STAGE 2: Full-model fine-tuning
+2026-04-01 03:35:11 - yolo_two_stage_trainer - INFO - ============================================================
+2026-04-01 19:05:31 - yolo_two_stage_trainer - INFO - 
+✅ Two-stage finetuned model saved: /home/aditya/mlproj/CivicResolvev1.1/ai_ml/models/best_civic_model_two_stage.pt
+2026-04-01 19:05:31 - yolo_two_stage_trainer - INFO - 
+============================================================
+2026-04-01 19:05:31 - yolo_two_stage_trainer - INFO - 🔍 VALIDATION (two-stage finetuned detector)
+2026-04-01 19:05:31 - yolo_two_stage_trainer - INFO - ============================================================
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO - Validation mAP50: 0.7209
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO - Validation mAP50-95: 0.4916
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO - Validation Precision: 0.7497
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO - Validation Recall: 0.6640
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO - 
+📋 Per-Class mAP50-95 (two-stage):
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO -   Damaged Road issues: 0.3355
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO -   Pothole Issues: 0.2844
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO -   Illegal Parking Issues: 0.2304
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO -   Broken Road Sign Issues: 0.8593
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO -   Fallen trees: 0.7841
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO -   Littering/Garbage on Public Places: 0.4464
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO -   Vandalism Issues: 0.5657
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO -   Dead Animal Pollution: 0.4155
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO -   Damaged concrete structures: 0.1832
+2026-04-01 19:08:50 - yolo_two_stage_trainer - INFO -   Damaged Electric wires and poles: 0.8117

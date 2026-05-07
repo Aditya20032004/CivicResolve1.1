@@ -12,6 +12,9 @@ import { IncidentReport } from '../types';
 import { api, endpoints } from '../lib/api';
 import dynamic from 'next/dynamic';
 
+// Track which counters have already completed their first animation
+const animatedCounterDone: Record<string, boolean> = {};
+
 const IncidentMap = dynamic(() => import('../components/IncidentMap'), { 
   ssr: false,
   loading: () => <div className="h-full w-full bg-slate-900/50 animate-pulse flex items-center justify-center text-slate-500 font-bold uppercase tracking-widest text-xs">Initializing Neural Map...</div>
@@ -27,10 +30,32 @@ const LandingView: React.FC<LandingViewProps> = ({ onEnterPortal, onReportIssue 
   const [loading, setLoading] = useState(true);
   const [showTable, setShowTable] = useState(false);
   const [stats, setStats] = useState({
-    garbage: 0,
-    potholes: 0,
     resolutionRate: "0",
-    totalNodes: 0
+    totalReports: 0,
+    perTypeReported: {
+      pothole: 0,
+      garbage: 0,
+      damaged_road: 0,
+      illegal_parking: 0,
+      broken_sign: 0,
+      fallen_tree: 0,
+      vandalism: 0,
+      dead_animal: 0,
+      damaged_concrete: 0,
+      damaged_wires: 0,
+    },
+    perTypeRepaired: {
+      pothole: 0,
+      garbage: 0,
+      damaged_road: 0,
+      illegal_parking: 0,
+      broken_sign: 0,
+      fallen_tree: 0,
+      vandalism: 0,
+      dead_animal: 0,
+      damaged_concrete: 0,
+      damaged_wires: 0,
+    },
   });
 
   useEffect(() => {
@@ -40,16 +65,51 @@ const LandingView: React.FC<LandingViewProps> = ({ onEnterPortal, onReportIssue 
         const data = res.data;
         setIncidents(data);
 
-        const garbageCount = data.filter(i => i.type.toLowerCase().includes('garbage')).length;
-        const potholeCount = data.filter(i => i.type.toLowerCase().includes('pothole')).length;
         const resolved = data.filter(i => i.status === 'verified' || i.status === 'completed').length;
         const rate = data.length > 0 ? ((resolved / data.length) * 100).toFixed(1) : "0";
 
+        // Count reports and repaired per subtype
+        const perTypeReported: typeof stats.perTypeReported = {
+          pothole: 0,
+          garbage: 0,
+          damaged_road: 0,
+          illegal_parking: 0,
+          broken_sign: 0,
+          fallen_tree: 0,
+          vandalism: 0,
+          dead_animal: 0,
+          damaged_concrete: 0,
+          damaged_wires: 0,
+        };
+
+        const perTypeRepaired: typeof stats.perTypeRepaired = {
+          pothole: 0,
+          garbage: 0,
+          damaged_road: 0,
+          illegal_parking: 0,
+          broken_sign: 0,
+          fallen_tree: 0,
+          vandalism: 0,
+          dead_animal: 0,
+          damaged_concrete: 0,
+          damaged_wires: 0,
+        };
+
+        for (const inc of data) {
+          const t = (inc.type || '').toLowerCase() as keyof typeof perTypeReported;
+          if (t in perTypeReported) {
+            perTypeReported[t] += 1;
+            if (inc.status === 'verified' || inc.status === 'completed') {
+              perTypeRepaired[t] += 1;
+            }
+          }
+        }
+
         setStats({
-          garbage: garbageCount,
-          potholes: potholeCount,
           resolutionRate: rate,
-          totalNodes: data.length
+          totalReports: data.length,
+          perTypeReported,
+          perTypeRepaired,
         });
       } catch (err) {
         console.error("Failed to fetch database records:", err);
@@ -118,30 +178,37 @@ const LandingView: React.FC<LandingViewProps> = ({ onEnterPortal, onReportIssue 
   );
 
   // Animated counter component
-  const AnimatedCounter = ({ value, suffix = '' }: { value: number | string; suffix?: string }) => {
+  const AnimatedCounter = ({ id, value, suffix = '' }: { id: string; value: number | string; suffix?: string }) => {
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
-    const [count, setCount] = useState(0);
+    const [count, setCount] = useState<number>(() => (animatedCounterDone[id] ? numValue : 0));
     const counterRef = useRef<HTMLSpanElement>(null);
-    const inView = useInView(counterRef, { once: true });
 
     useEffect(() => {
-      if (inView) {
-        const duration = 2000;
-        const steps = 60;
-        const increment = numValue / steps;
-        let current = 0;
-        const timer = setInterval(() => {
-          current += increment;
-          if (current >= numValue) {
-            setCount(numValue);
-            clearInterval(timer);
-          } else {
-            setCount(Math.floor(current));
-          }
-        }, duration / steps);
-        return () => clearInterval(timer);
+      // If this particular counter already finished its first animation, just lock to final value.
+      if (animatedCounterDone[id]) {
+        if (count !== numValue) {
+          setCount(numValue);
+        }
+        return;
       }
-    }, [inView, numValue]);
+
+      const duration = 2000;
+      const steps = 60;
+      const increment = numValue / steps;
+      let current = 0;
+      const timer = setInterval(() => {
+        current += increment;
+        if (current >= numValue) {
+          animatedCounterDone[id] = true;
+          setCount(numValue);
+          clearInterval(timer);
+        } else {
+          setCount(Math.floor(current));
+        }
+      }, duration / steps);
+
+      return () => clearInterval(timer);
+    }, [id, numValue, count]);
 
     return <span ref={counterRef}>{count}{suffix}</span>;
   };
@@ -558,9 +625,9 @@ const LandingView: React.FC<LandingViewProps> = ({ onEnterPortal, onReportIssue 
               </motion.div>
               <div className="text-left">
                 <p className="text-3xl font-black leading-none text-white">
-                  {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <AnimatedCounter value={stats.totalNodes} />}
+                  {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : incidents.length}
                 </p>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Live Nodes Active</p>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Total Reports in Database</p>
               </div>
             </motion.div>
           </motion.div>
@@ -604,54 +671,6 @@ const LandingView: React.FC<LandingViewProps> = ({ onEnterPortal, onReportIssue 
             viewport={{ once: true, margin: "-100px" }}
             className="grid grid-cols-1 md:grid-cols-4 gap-6"
           >
-            {/* Large Card - Garbage */}
-            <motion.div 
-              variants={itemVariants}
-              whileHover={{ scale: 1.02, rotateY: 5 }}
-              className="md:col-span-2 p-10 glass-card rounded-[3rem] flex flex-col justify-between h-80 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="flex justify-between items-start relative z-10">
-                <motion.div 
-                  whileHover={{ rotate: 15, scale: 1.1 }}
-                  className="p-5 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20"
-                >
-                  <Trash2 className="w-8 h-8" />
-                </motion.div>
-                <div className="px-4 py-2 glass-light text-emerald-300 rounded-full text-[9px] font-black tracking-widest uppercase flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Sanitation Focus
-                </div>
-              </div>
-              <div className="relative z-10">
-                <h3 className="text-7xl font-black tracking-tighter mb-2 text-white">
-                  {loading ? <Loader2 className="w-8 h-8 animate-spin inline" /> : <AnimatedCounter value={stats.garbage} />}
-                </h3>
-                <p className="text-slate-500 font-bold uppercase text-xs tracking-[0.2em]">Garbage Reports in Database</p>
-              </div>
-            </motion.div>
-
-            {/* Pothole Card */}
-            <motion.div 
-              variants={itemVariants}
-              whileHover={{ scale: 1.02, rotateY: -5 }}
-              className="p-10 glass-card rounded-[3rem] flex flex-col justify-between h-80 relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <motion.div 
-                whileHover={{ rotate: -15, scale: 1.1 }}
-                className="p-5 bg-orange-500/10 text-orange-400 rounded-2xl border border-orange-500/20 w-fit"
-              >
-                <AlertTriangle className="w-8 h-8" />
-              </motion.div>
-              <div className="relative z-10">
-                <h3 className="text-7xl font-black tracking-tighter mb-2 text-white">
-                  {loading ? '...' : <AnimatedCounter value={stats.potholes} />}
-                </h3>
-                <p className="text-slate-500 font-bold uppercase text-xs tracking-[0.2em]">Pothole Repairs</p>
-              </div>
-            </motion.div>
-
             {/* Resolution Rate Card */}
             <motion.div 
               variants={itemVariants}
@@ -668,7 +687,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onEnterPortal, onReportIssue 
               </motion.div>
               <div className="relative z-10">
                 <h3 className="text-7xl font-black tracking-tighter mb-2 text-white">
-                  {loading ? '...' : <><AnimatedCounter value={stats.resolutionRate} />%</>}
+                  {loading ? '...' : <>{stats.resolutionRate}%</>}
                 </h3>
                 <p className="text-violet-200 font-bold uppercase text-xs tracking-[0.2em]">Resolution Score</p>
               </div>
@@ -684,6 +703,65 @@ const LandingView: React.FC<LandingViewProps> = ({ onEnterPortal, onReportIssue 
                 className="absolute -bottom-10 -right-10 w-40 h-40 border border-white/10 rounded-full" 
               />
             </motion.div>
+
+            {/* Systematic per-issue cards: reported vs repaired */}
+            {[
+              { key: 'pothole', label: 'Pothole' },
+              { key: 'garbage', label: 'Garbage' },
+              { key: 'damaged_road', label: 'Damaged Road' },
+              { key: 'illegal_parking', label: 'Illegal Parking' },
+              { key: 'broken_sign', label: 'Broken Sign' },
+              { key: 'fallen_tree', label: 'Fallen Tree' },
+              { key: 'vandalism', label: 'Vandalism' },
+              { key: 'dead_animal', label: 'Dead Animal' },
+              { key: 'damaged_concrete', label: 'Damaged Concrete' },
+              { key: 'damaged_wires', label: 'Damaged Wires' },
+            ].map((cfg) => (
+              <motion.div 
+                key={cfg.key}
+                variants={itemVariants}
+                whileHover={{ scale: 1.02, rotateY: -3 }}
+                className="p-10 glass-card rounded-[3rem] flex flex-col justify-between h-72 relative overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="flex justify-between items-start relative z-10 mb-4">
+                  <motion.div 
+                    whileHover={{ rotate: -10, scale: 1.05 }}
+                    className="p-4 bg-slate-500/10 text-slate-200 rounded-2xl border border-slate-500/30 w-fit"
+                  >
+                    <LayoutList className="w-7 h-7" />
+                  </motion.div>
+                  <div className="px-4 py-2 glass-light text-slate-300 rounded-full text-[9px] font-black tracking-widest uppercase flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    {cfg.label}
+                  </div>
+                </div>
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Reported</span>
+                    <span className="text-3xl font-black text-white">
+                      {loading ? '...' : (
+                        <AnimatedCounter
+                          id={`${cfg.key}-reported`}
+                          value={stats.perTypeReported[cfg.key as keyof typeof stats.perTypeReported]}
+                        />
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Repaired</span>
+                    <span className="text-3xl font-black text-emerald-400">
+                      {loading ? '...' : (
+                        <AnimatedCounter
+                          id={`${cfg.key}-repaired`}
+                          value={stats.perTypeRepaired[cfg.key as keyof typeof stats.perTypeRepaired]}
+                        />
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </section>

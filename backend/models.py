@@ -10,6 +10,9 @@ class BaseReport(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     image_filename = db.Column(db.String(255), nullable=False)
+    # Stable fingerprint of the original image used for duplicate
+    # detection and basic anti-fraud analytics.
+    image_hash = db.Column(db.String(64), nullable=True)
     resolved_image = db.Column(db.String(255), nullable=True)
     
     # Location
@@ -24,6 +27,8 @@ class BaseReport(db.Model):
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # When the worker's fix was first marked as verified.
+    resolved_at = db.Column(db.DateTime, nullable=True)
 
 class PotholeReport(BaseReport):
     __tablename__ = 'potholes'
@@ -273,8 +278,53 @@ class Worker(db.Model):
     reward_points = db.Column(db.Integer, default=0)
     penalty_points = db.Column(db.Integer, default=0)
 
+    # Long-term performance metrics used for composite reliability.
+    total_assigned = db.Column(db.Integer, default=0)
+    total_completed = db.Column(db.Integer, default=0)
+    total_verified = db.Column(db.Integer, default=0)
+    total_rejected = db.Column(db.Integer, default=0)
+    total_sla_breaches = db.Column(db.Integer, default=0)
+    total_disputes = db.Column(db.Integer, default=0)
+    avg_resolution_minutes = db.Column(db.Float, default=0.0)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def compute_reliability_score(self) -> float:
+        """Compute a composite reliability score for this worker.
+
+        The score is intentionally bounded between 0 and 100 and
+        combines raw reward/penalty points with long-term metrics such
+        as completion rate, SLA compliance, and dispute rate.
+        """
+        base = 50.0
+
+        # Reward / penalty influence
+        reward = float(self.reward_points or 0)
+        penalty = float(self.penalty_points or 0)
+        base += 0.5 * reward
+        base -= 2.0 * penalty
+
+        assigned = float(self.total_assigned or 0)
+        verified = float(self.total_verified or 0)
+        breaches = float(self.total_sla_breaches or 0)
+        disputes = float(self.total_disputes or 0)
+
+        if assigned > 0:
+            completion_rate = verified / assigned
+            # Strongly reward high completion rate
+            base += (completion_rate - 0.6) * 40.0
+
+            sla_compliance = max(0.0, 1.0 - (breaches / assigned))
+            base += (sla_compliance - 0.8) * 30.0
+
+        # Frequent disputes lower trust slightly even if verified.
+        if verified > 0 and disputes > 0:
+            dispute_rate = disputes / verified
+            base -= dispute_rate * 20.0
+
+        # Bound to a sane range.
+        return max(0.0, min(100.0, base))
 
     def to_dict(self):
         return {
@@ -289,6 +339,16 @@ class Worker(db.Model):
             'max_tasks': self.max_tasks,
             'reward_points': self.reward_points,
             'penalty_points': self.penalty_points,
+            'metrics': {
+                'total_assigned': self.total_assigned,
+                'total_completed': self.total_completed,
+                'total_verified': self.total_verified,
+                'total_rejected': self.total_rejected,
+                'total_sla_breaches': self.total_sla_breaches,
+                'total_disputes': self.total_disputes,
+                'avg_resolution_minutes': self.avg_resolution_minutes,
+                'reliability_score': self.compute_reliability_score(),
+            },
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
 

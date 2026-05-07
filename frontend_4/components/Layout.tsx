@@ -26,8 +26,23 @@ const Layout: React.FC<LayoutProps> = ({ session, onLogout, children }) => {
     }
   };
 
+  const showVideoBackground = session.role === 'Admin' || session.role === 'Worker';
+
   return (
-    <div className="flex h-screen mesh-gradient-warm overflow-hidden text-stone-100">
+    <div className="relative flex h-screen mesh-gradient-warm overflow-hidden text-stone-100">
+      {showVideoBackground && (
+        <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+          <video
+            className="h-full w-full object-cover opacity-70"
+            autoPlay
+            muted
+            loop
+            playsInline
+          >
+            <source src="/video/27669-365224683.mp4" type="video/mp4" />
+          </video>
+        </div>
+      )}
       {/* Sidebar */}
       <aside className="w-80 glass-warm flex flex-col hidden lg:flex border-r border-stone-800/50 relative z-50">
         <div className="p-10">

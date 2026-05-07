@@ -6,6 +6,23 @@ import { IncidentReport } from '../types';
 import { RefreshCw, LayoutDashboard, CheckSquare, AlertCircle, CheckCircle2, List, Send, Map as MapIcon, ChevronRight, Activity, Database, ShieldCheck, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+type DamageEstimate = {
+  loading?: boolean;
+  error?: string;
+  incident_id?: number;
+  incident_type?: string;
+  issue_type?: string;
+  summary?: string;
+  repair?: {
+    cost_range?: { min?: number; max?: number };
+    materials?: string[];
+    equipment?: string[];
+    labor_hours?: number;
+    [key: string]: any;
+  };
+  damage?: any;
+};
+
 const AdminView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'verification'>('dashboard');
   const [incidents, setIncidents] = useState<IncidentReport[]>([]);
@@ -15,6 +32,7 @@ const AdminView: React.FC = () => {
   const [verifyLogs, setVerifyLogs] = useState<any[]>([]);
   const [disputes, setDisputes] = useState<any[]>([]);
   const [sweepSummary, setSweepSummary] = useState<any | null>(null);
+  const [damageEstimates, setDamageEstimates] = useState<Record<number, DamageEstimate>>({});
   const [MapComponent, setMapComponent] = useState<React.ComponentType<any> | null>(null);
 
   useEffect(() => {
@@ -59,6 +77,32 @@ const AdminView: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const runDamageEstimate = async (incident: IncidentReport) => {
+    const id = incident.id;
+    setDamageEstimates((prev) => ({
+      ...prev,
+      [id]: { ...(prev[id] || {}), loading: true, error: undefined },
+    }));
+
+    try {
+      const res = await api.post(endpoints.ai.damageIncident, {
+        id: incident.id,
+        type: incident.type,
+      });
+
+      setDamageEstimates((prev) => ({
+        ...prev,
+        [id]: { ...(res.data || {}), loading: false },
+      }));
+    } catch (err: any) {
+      const apiError = err?.response?.data?.error || 'Failed to estimate damage';
+      setDamageEstimates((prev) => ({
+        ...prev,
+        [id]: { ...(prev[id] || {}), loading: false, error: apiError },
+      }));
+    }
+  };
 
   const handleAssign = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,10 +299,36 @@ const AdminView: React.FC = () => {
                                {i.type}
                              </span>
                            </td>
-                           <td className="px-8 py-6 glass-warm border-x-0 border-stone-800">
-                             <div className="flex items-center gap-3">
-                               <div className={`w-2 h-2 rounded-full ${i.status === 'pending' ? 'bg-orange-500' : i.status === 'completed' ? 'bg-amber-400' : 'bg-emerald-500'} animate-pulse`}></div>
-                               <span className="text-[10px] font-black text-stone-200 uppercase tracking-widest">{i.status}</span>
+                           <td className="px-8 py-6 glass-warm border-x-0 border-stone-800 align-top">
+                             <div className="flex flex-col gap-2">
+                               <div className="flex items-center gap-3">
+                                 <div className={`w-2 h-2 rounded-full ${i.status === 'pending' ? 'bg-orange-500' : i.status === 'completed' ? 'bg-amber-400' : 'bg-emerald-500'} animate-pulse`}></div>
+                                 <span className="text-[10px] font-black text-stone-200 uppercase tracking-widest">{i.status}</span>
+                               </div>
+                               {(() => {
+                                 const estimate = damageEstimates[i.id];
+                                 const costRange = estimate?.repair?.cost_range;
+                                 const hasEstimate = estimate && !estimate.loading && !estimate.error;
+
+                                 return (
+                                   <div className="flex items-center gap-2 text-[9px]">
+                                     <button
+                                       onClick={() => runDamageEstimate(i)}
+                                       disabled={estimate?.loading}
+                                       className="px-2 py-1 rounded-xl bg-amber-600/90 text-white font-black uppercase tracking-[0.2em] hover:bg-amber-500 disabled:opacity-60 flex items-center gap-1"
+                                     >
+                                       <Database className="w-3 h-3" />
+                                       {estimate?.loading ? 'Running' : hasEstimate ? 'Re-run' : 'Damage'}
+                                     </button>
+                                     {hasEstimate && costRange && (
+                                       <span className="text-amber-300 font-black uppercase tracking-[0.2em]">
+                                         ₹{typeof costRange.min === 'number' ? costRange.min.toLocaleString('en-IN') : '?'}-
+                                         {typeof costRange.max === 'number' ? costRange.max.toLocaleString('en-IN') : '?'}
+                                       </span>
+                                     )}
+                                   </div>
+                                 );
+                               })()}
                              </div>
                            </td>
                            <td className="px-8 py-6 glass-warm rounded-r-2xl border-l-0 border-stone-800 text-[10px] font-black text-stone-500 italic tracking-wider">
@@ -275,7 +345,7 @@ const AdminView: React.FC = () => {
             <div className="lg:col-span-1 space-y-6">
               <motion.div 
                 whileHover={{ scale: 1.02 }}
-                className="glass-card p-10 rounded-[3.5rem] shadow-2xl border border-stone-800 sticky top-24"
+                className="glass-card p-10 rounded-[3.5rem] shadow-2xl border border-stone-800"
               >
                 <div className="p-5 bg-amber-600 rounded-[1.5rem] w-fit mb-8 shadow-xl shadow-amber-900/40">
                   <Send className="w-8 h-8 text-white" />
@@ -439,6 +509,63 @@ const AdminView: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Damage & Repair Estimate */}
+                  {(() => {
+                    const estimate = damageEstimates[t.id];
+                    const costRange = estimate?.repair?.cost_range;
+                    const hasEstimate = estimate && !estimate.loading && !estimate.error;
+
+                    return (
+                      <div className="mb-8 glass-warm rounded-2xl border border-amber-500/30 px-6 py-4 flex items-start justify-between gap-4 relative z-10 bg-amber-500/5">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.35em] text-amber-300 mb-1 flex items-center gap-2">
+                            <Database className="w-3 h-3" />
+                            Damage &amp; Repair Estimate
+                          </p>
+                          {estimate?.loading && (
+                            <p className="text-[11px] text-amber-100 font-medium">Running damage model…</p>
+                          )}
+                          {estimate?.error && !estimate.loading && (
+                            <p className="text-[11px] text-red-400 font-medium">{estimate.error}</p>
+                          )}
+                          {hasEstimate && (
+                            <div className="space-y-1">
+                              {estimate.summary && (
+                                <p className="text-[11px] text-amber-50 font-medium leading-relaxed">
+                                  {estimate.summary}
+                                </p>
+                              )}
+                              {costRange && (
+                                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-200 mt-1">
+                                  Estimated Repair Window: ₹
+                                  {typeof costRange.min === 'number' ? costRange.min.toLocaleString('en-IN') : '?'}
+                                  {' - '}
+                                  {typeof costRange.max === 'number' ? costRange.max.toLocaleString('en-IN') : '?'}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <motion.button
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => runDamageEstimate(t)}
+                            disabled={estimate?.loading}
+                            className="px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] bg-amber-600 text-white shadow-lg shadow-amber-900/40 hover:bg-amber-500 disabled:opacity-60"
+                          >
+                            {estimate?.loading ? 'Running…' : hasEstimate ? 'Re-run Estimate' : 'Run Estimate'}
+                          </motion.button>
+                          {hasEstimate && estimate.issue_type && (
+                            <span className="text-[9px] text-amber-300 font-black uppercase tracking-[0.3em] opacity-80">
+                              Mode: {estimate.issue_type}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="flex gap-4 relative z-10">
                     <button

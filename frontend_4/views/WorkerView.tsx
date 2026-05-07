@@ -59,8 +59,9 @@ const WorkerView: React.FC<WorkerViewProps> = ({ session }) => {
       const res = await api.post(endpoints.workflow.complete, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+      const approved = !!res.data?.approved;
       const msg = (res.data && res.data.message) || 'Resolution proof uploaded and processed.';
-      setBanner({ type: 'success', msg });
+      setBanner({ type: approved ? 'success' : 'error', msg });
       fetchTasks();
     } catch (err: any) {
       console.error(err);
@@ -181,16 +182,16 @@ const WorkerView: React.FC<WorkerViewProps> = ({ session }) => {
                         Anomaly Reference
                       </label>
                       <div className="aspect-video glass rounded-[3rem] overflow-hidden border border-white/5 relative shadow-inner group/ref">
-                        {task.images?.resolved ? (
-                          <img
-                            src={`${IMG_BASE_URL}/${task.images.resolved}`}
-                            alt="Resolved (YOLO-verified) Issue"
-                            className="w-full h-full object-cover grayscale opacity-50 group-hover/ref:grayscale-0 group-hover/ref:opacity-100 transition-all duration-700"
-                          />
-                        ) : task.images?.original ? (
+                        {task.images?.original ? (
                           <img
                             src={`${IMG_BASE_URL}/${task.images.original}`}
                             alt="Issue"
+                            className="w-full h-full object-cover grayscale opacity-50 group-hover/ref:grayscale-0 group-hover/ref:opacity-100 transition-all duration-700"
+                          />
+                        ) : task.images?.resolved ? (
+                          <img
+                            src={`${IMG_BASE_URL}/${task.images.resolved}`}
+                            alt="Resolved (YOLO-verified) Issue"
                             className="w-full h-full object-cover grayscale opacity-50 group-hover/ref:grayscale-0 group-hover/ref:opacity-100 transition-all duration-700"
                           />
                         ) : (

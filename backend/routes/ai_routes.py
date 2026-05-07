@@ -5,6 +5,19 @@ from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 from ultralytics import YOLO
 from backend.utils.severity_classifier import classify_issue_from_results
+from backend.utils.damage_quantifier import get_quantifier
+from backend.models import (
+    PotholeReport,
+    GarbageReport,
+    DamagedRoadReport,
+    IllegalParkingReport,
+    BrokenSignReport,
+    FallenTreeReport,
+    VandalismReport,
+    DeadAnimalReport,
+    DamagedConcreteReport,
+    DamagedWiresReport,
+)
 
 ai_bp = Blueprint('ai', __name__)
 
@@ -111,3 +124,84 @@ def predict():
         import traceback
         traceback.print_exc() # Print full error trace
         return jsonify({'error': str(e)}), 500
+
+
+@ai_bp.route('/damage/incident', methods=['POST'])
+def quantify_incident_damage():
+    """Run damage quantification for a stored incident image.
+
+    Expects JSON body: {"id": <report_id>, "type": <report_type>} where
+    type is one of the canonical report types used in the admin API
+    (e.g. "pothole", "garbage", "damaged_road", etc.).
+    """
+
+    data = request.json or {}
+    rid = data.get('id')
+    rtype = data.get('type')
+
+    if not rid or not rtype:
+        return jsonify({
+            'error': 'Missing required fields',
+            'required': ['id', 'type'],
+        }), 400
+
+    report = None
+    if rtype == 'pothole':
+        report = PotholeReport.query.get(rid)
+    elif rtype == 'garbage':
+        report = GarbageReport.query.get(rid)
+    elif rtype == 'damaged_road':
+        report = DamagedRoadReport.query.get(rid)
+    elif rtype == 'illegal_parking':
+        report = IllegalParkingReport.query.get(rid)
+    elif rtype == 'broken_sign':
+        report = BrokenSignReport.query.get(rid)
+    elif rtype == 'fallen_tree':
+        report = FallenTreeReport.query.get(rid)
+    elif rtype == 'vandalism':
+        report = VandalismReport.query.get(rid)
+    elif rtype == 'dead_animal':
+        report = DeadAnimalReport.query.get(rid)
+    elif rtype == 'damaged_concrete':
+        report = DamagedConcreteReport.query.get(rid)
+    elif rtype == 'damaged_wires':
+        report = DamagedWiresReport.query.get(rid)
+
+    if not report:
+        return jsonify({'error': 'Report not found'}), 404
+
+    upload_folder = current_app.config['UPLOAD_FOLDER']
+    image_filename = getattr(report, 'image_filename', None)
+    if not image_filename:
+        return jsonify({'error': 'Incident has no source image'}), 400
+
+    image_path = os.path.join(str(upload_folder), image_filename)
+    if not os.path.exists(image_path):
+        return jsonify({'error': f'Image not found on server: {image_filename}'}), 404
+
+    # Map CivicResolve report type to damage quantifier issue_type
+    if rtype in ('pothole', 'garbage'):
+        issue_type = rtype
+    elif rtype in ('damaged_road', 'damaged_concrete', 'damaged_wires', 'fallen_tree', 'vandalism'):
+        issue_type = 'infrastructure'
+    elif rtype in ('dead_animal',):
+        issue_type = 'garbage'
+    else:
+        issue_type = 'pothole'
+
+    quantifier = get_quantifier()
+    result = quantifier.quantify_damage(image_path, issue_type)
+
+    status_code = 200
+    if isinstance(result, dict) and result.get('error'):
+        # Surface quantifier errors but still include payload for debugging
+        status_code = 500
+
+    return jsonify({
+        'incident_id': report.id,
+        'incident_type': rtype,
+        'issue_type': issue_type,
+        'summary': result.get('summary'),
+        'damage': result.get('damage'),
+        'repair': result.get('repair'),
+    }), status_code

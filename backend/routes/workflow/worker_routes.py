@@ -3,7 +3,21 @@ from werkzeug.utils import secure_filename
 import os
 from datetime import datetime
 from pathlib import Path
-from backend.models import db, PotholeReport, GarbageReport, Worker, VerificationLog
+from backend.models import (
+    db,
+    PotholeReport,
+    GarbageReport,
+    DamagedRoadReport,
+    IllegalParkingReport,
+    BrokenSignReport,
+    FallenTreeReport,
+    VandalismReport,
+    DeadAnimalReport,
+    DamagedConcreteReport,
+    DamagedWiresReport,
+    Worker,
+    VerificationLog,
+)
 from workflow.worker_workflow import release_worker_task
 from workflow.verification_workflow import run_dual_verification
 from ultralytics import YOLO
@@ -29,10 +43,26 @@ def get_worker_tasks(worker_id):
     This keeps the response as a simple list of incidents to avoid
     breaking the existing frontend contract.
     """
-    p_tasks = PotholeReport.query.filter_by(assigned_worker_id=worker_id, status='assigned').all()
-    g_tasks = GarbageReport.query.filter_by(assigned_worker_id=worker_id, status='assigned').all()
+    report_models = [
+        PotholeReport,
+        GarbageReport,
+        DamagedRoadReport,
+        IllegalParkingReport,
+        BrokenSignReport,
+        FallenTreeReport,
+        VandalismReport,
+        DeadAnimalReport,
+        DamagedConcreteReport,
+        DamagedWiresReport,
+    ]
 
-    tasks = [p.to_dict() for p in p_tasks] + [g.to_dict() for g in g_tasks]
+    tasks: list[dict] = []
+    for model in report_models:
+        rows = model.query.filter_by(assigned_worker_id=worker_id, status='assigned').all()
+        tasks.extend(r.to_dict() for r in rows)
+
+    # Sort newest first for a stable ordering in the Worker UI.
+    tasks.sort(key=lambda t: t.get('created_at', ''), reverse=True)
     return jsonify(tasks), 200
 
 
@@ -101,12 +131,26 @@ def complete_task():
     else:
         os.rename(temp_path, path)
     
-    report = None
-    if rtype == 'pothole':
-        report = PotholeReport.query.get(rid)
-    elif rtype == 'garbage':
-        report = GarbageReport.query.get(rid)
+    # Map API type strings back to their SQLAlchemy models so workers can
+    # complete tasks for any of the supported civic issue classes.
+    type_model_map = {
+        'pothole': PotholeReport,
+        'garbage': GarbageReport,
+        'damaged_road': DamagedRoadReport,
+        'illegal_parking': IllegalParkingReport,
+        'broken_sign': BrokenSignReport,
+        'fallen_tree': FallenTreeReport,
+        'vandalism': VandalismReport,
+        'dead_animal': DeadAnimalReport,
+        'damaged_concrete': DamagedConcreteReport,
+        'damaged_wires': DamagedWiresReport,
+    }
 
+    model_cls = type_model_map.get((rtype or '').strip().lower())
+    if not model_cls:
+        return jsonify({'error': 'Unsupported report type', 'type': rtype}), 400
+
+    report = model_cls.query.get(rid)
     if not report:
         return jsonify({'error': 'Report not found'}), 404
 
@@ -177,8 +221,17 @@ def complete_task():
         print(f"⚠️ Failed to write verification log: {_e}")
 
     db.session.commit()
+
+    # Surface a clearer message back to the worker UI so they
+    # immediately see whether the proof was accepted or rejected.
+    response_message = verification.get('reason') or (
+        'Resolution verified and ticket closed.' if approved
+        else 'Dual verification failed; task returned for rework.'
+    )
+
     return jsonify({
-        'message': 'Task processed with dual verification',
+        'message': response_message,
         'status': report.status,
         'verification': verification,
+        'approved': approved,
     }), 200

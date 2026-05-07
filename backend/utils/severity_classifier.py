@@ -18,7 +18,7 @@ def classify_issue_from_results(results: Any, model: Any) -> Dict[str, Any]:
 
     Returns:
         dict with keys:
-            - issue_class: 'pothole' | 'garbage' | None
+            - issue_class: dominant YOLO class name (e.g. 'pothole issues', 'littering/garbage on public places') or None
             - severity: 'low' | 'medium' | 'high' | None
             - stats: raw aggregation stats used for the decision
     """
@@ -38,11 +38,11 @@ def classify_issue_from_results(results: Any, model: Any) -> Dict[str, Any]:
     for box in getattr(r, "boxes", []) or []:
         try:
             cls_id = int(box.cls[0])
+            # Use the raw YOLO class name (lowercased); this can be
+            # any civic label such as "pothole issues" or
+            # "littering/garbage on public places".
             name = str(model.names[cls_id]).lower()
         except Exception:
-            continue
-
-        if name not in {"pothole", "garbage"}:
             continue
 
         try:

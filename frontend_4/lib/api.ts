@@ -14,6 +14,7 @@ export const api = axios.create({
 export const endpoints = {
   ai: {
     predict: '/ai/predict',
+    damageIncident: '/ai/damage/incident',
   },
   citizen: {
     report: '/citizen/report',

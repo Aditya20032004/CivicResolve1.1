@@ -117,12 +117,19 @@ def _select_best_worker(report_lat=None, report_lng=None):
 			continue
 
 		distance = _haversine_km(worker.latitude, worker.longitude, report_lat, report_lng)
-		# Incorporate simple performance score: more rewards and fewer
-		# penalties slightly improve the worker's priority when distance
-		# and load are similar.
-		reliability = (worker.reward_points or 0) - 3 * (worker.penalty_points or 0)
-		performance_bias = -0.05 * reliability
-		# Score: closer distance and fewer active tasks are better; lower is better.
+
+		# Composite reliability score from the Worker model combines
+		# reward/penalty history with long-term performance metrics.
+		try:
+			reliability = float(worker.compute_reliability_score())
+		except Exception:
+			# Fallback to a neutral score if anything goes wrong.
+			reliability = 50.0
+
+		# Score: closer distance and fewer active tasks are better. A
+		# higher reliability score slightly reduces the effective cost so
+		# that two nearby workers are ordered by long-term performance.
+		performance_bias = -(reliability / 40.0)
 		score = distance + (current_tasks * 2.0) + performance_bias
 		scored.append((score, distance, current_tasks, worker))
 
@@ -160,6 +167,7 @@ def assign_report_to_worker(report, preferred_worker_id=None, auto_commit=True):
 	report.assigned_worker_id = worker.id
 	report.status = 'assigned'
 	worker.active_tasks = (worker.active_tasks or 0) + 1
+	worker.total_assigned = (worker.total_assigned or 0) + 1
 
 	if auto_commit:
 		db.session.commit()

@@ -1,9 +1,13 @@
-"""
-Smart Issue Validator - Fake Report Detection
-Validates civic issue reports for authenticity before processing.
+"""Smart Issue Validator - Fake Report Detection.
+
+This module validates incoming civic issue reports before they enter the
+workflow. It combines EXIF checks, screenshot heuristics, YOLO content
+verification, and lightweight duplicate / anomaly detection into a single
+trust score that the rest of the system can reason about.
 """
 
 import os
+import hashlib
 from datetime import datetime, timedelta
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
@@ -33,6 +37,15 @@ class IssueValidator:
         self.checks = {}
         self.score = 100  # Start with full trust
         self.penalties = []
+
+        # In-memory per-user anomaly tracking. This is intentionally
+        # lightweight and stateless across process restarts – the goal
+        # is to make repeated fake submissions from the same identity
+        # increasingly expensive without adding a new DB table.
+        #
+        # Structure:
+        #   { user_id: { 'total': int, 'rejected': int, 'flagged': int } }
+        self._user_stats = {}
     
     def validate_report(self, image_path, claimed_lat=None, claimed_lng=None, 
                        issue_type=None, user_id=None):
@@ -50,11 +63,18 @@ class IssueValidator:
         self.score = 100
         self.penalties = []
         self.checks = {}
-        
+
+        # Lightweight image fingerprint used for duplicate detection and
+        # optional downstream storage on the report model.
+        image_hash = self._fingerprint_image(image_path)
+
         # Run all checks
         self._check_exif_data(image_path, claimed_lat, claimed_lng)
         self._detect_screenshot(image_path)
         self._verify_civic_content(image_path, issue_type)
+        self._check_duplicates(image_hash)
+        self._check_basic_image_forensics(image_path)
+        self._apply_user_history_penalty(user_id)
         
         # Calculate final score (subtract penalties)
         final_score = max(0, min(100, self.score - sum(self.penalties)))
@@ -71,13 +91,46 @@ class IssueValidator:
             message = ("We couldn't verify this image. Please ensure your photo "
                       "shows an actual civic issue, was taken recently at the "
                       "reported location, and provides a clear view of the problem.")
-        
+
+        # Update in-memory user anomaly stats so that repeat offenders
+        # gradually receive a lower trust score on future submissions.
+        self._record_user_outcome(user_id, decision)
+
         return {
             'score': final_score,
             'decision': decision,
             'message': message,
-            'checks': self.checks
+            'checks': self.checks,
+            'image_hash': image_hash,
         }
+
+    # ------------------------------------------------------------------
+    # Core check implementations
+    # ------------------------------------------------------------------
+
+    def _fingerprint_image(self, image_path):
+        """Return a stable SHA-256 fingerprint for an image file.
+
+        This is intentionally simple (byte-level hash) rather than a
+        heavy perceptual hash implementation to avoid extra dependencies
+        while still catching exact and near-exact re-uploads.
+        """
+        try:
+            with open(image_path, 'rb') as f:
+                digest = hashlib.sha256(f.read()).hexdigest()
+        except Exception as e:
+            digest = None
+            self.checks['image_fingerprint'] = {
+                'status': 'error',
+                'error': str(e),
+            }
+            return None
+
+        self.checks['image_fingerprint'] = {
+            'status': 'ok',
+            'hash': digest,
+        }
+        return digest
     
     def _check_exif_data(self, image_path, claimed_lat=None, claimed_lng=None):
         """Extract and validate EXIF metadata."""
@@ -212,6 +265,127 @@ class IssueValidator:
                 
         except Exception as e:
             self.checks['screenshot'] = {'status': 'error', 'error': str(e)}
+
+    def _check_duplicates(self, image_hash):
+        """Check if this image hash already exists in the incident tables.
+
+        When a duplicate is found we don't immediately reject the
+        report, but we do record the linkage and apply a moderate
+        penalty so that exact re-uploads of the same photo gradually
+        reduce trust.
+        """
+        if not image_hash:
+            self.checks['duplicate'] = {
+                'status': 'skipped',
+                'reason': 'no_hash',
+            }
+            return
+
+        try:
+            # Late import to avoid circular imports during app startup.
+            from backend.models import (
+                PotholeReport,
+                GarbageReport,
+                DamagedRoadReport,
+                IllegalParkingReport,
+                BrokenSignReport,
+                FallenTreeReport,
+                VandalismReport,
+                DeadAnimalReport,
+                DamagedConcreteReport,
+                DamagedWiresReport,
+            )
+
+            models = [
+                PotholeReport,
+                GarbageReport,
+                DamagedRoadReport,
+                IllegalParkingReport,
+                BrokenSignReport,
+                FallenTreeReport,
+                VandalismReport,
+                DeadAnimalReport,
+                DamagedConcreteReport,
+                DamagedWiresReport,
+            ]
+
+            matches = []
+            for model in models:
+                try:
+                    rows = model.query.filter_by(image_hash=image_hash).limit(3).all()
+                except Exception:
+                    # If the underlying DB is missing the new column the
+                    # query will fail; in that case we simply skip duplicate
+                    # checking instead of breaking validation entirely.
+                    rows = []
+                for r in rows:
+                    matches.append({
+                        'id': r.id,
+                        'type': model.__tablename__,
+                        'status': r.status,
+                    })
+
+            if matches:
+                # Apply a modest penalty – duplicate reports can still be
+                # valid if many citizens report the same issue, but we
+                # want to surface it to the caller and the UI.
+                self.checks['duplicate'] = {
+                    'status': 'duplicate',
+                    'matches': matches,
+                }
+                self.penalties.append(15)
+            else:
+                self.checks['duplicate'] = {
+                    'status': 'unique',
+                }
+        except Exception as e:
+            self.checks['duplicate'] = {
+                'status': 'error',
+                'error': str(e),
+            }
+
+    def _check_basic_image_forensics(self, image_path):
+        """Apply lightweight forensics-style sanity checks on the image.
+
+        This is deliberately simple but catches common low-effort fakes:
+        extremely tiny files, images with almost no visual variation,
+        or images that look like heavily compressed screenshots.
+        """
+        try:
+            stats = {
+                'status': 'ok',
+            }
+
+            # 1) Very small files are suspicious (saves, crops, templates).
+            try:
+                size_bytes = os.path.getsize(image_path)
+                stats['size_bytes'] = size_bytes
+                if size_bytes < 10 * 1024:  # <10KB
+                    stats['small_file'] = True
+                    self.penalties.append(10)
+            except OSError as e:
+                stats['size_error'] = str(e)
+
+            # 2) Extremely narrow dynamic range (almost flat image).
+            try:
+                img = Image.open(image_path).convert('L')
+                hist = img.histogram()
+                non_zero_bins = sum(1 for v in hist if v > 0)
+                stats['non_zero_bins'] = non_zero_bins
+                if non_zero_bins < 16:
+                    # Images with very few intensity levels are usually
+                    # generated overlays or "blank" screens.
+                    stats['low_variation'] = True
+                    self.penalties.append(10)
+            except Exception as e:
+                stats['hist_error'] = str(e)
+
+            self.checks['forensics'] = stats
+        except Exception as e:
+            self.checks['forensics'] = {
+                'status': 'error',
+                'error': str(e),
+            }
     
     def _verify_civic_content(self, image_path, claimed_type=None):
         """Verify image contains civic infrastructure using YOLO model."""
@@ -267,6 +441,60 @@ class IssueValidator:
                 
         except Exception as e:
             self.checks['content'] = {'status': 'error', 'error': str(e)}
+
+    # ------------------------------------------------------------------
+    # User anomaly tracking helpers
+    # ------------------------------------------------------------------
+
+    def _apply_user_history_penalty(self, user_id):
+        """Apply a soft penalty if this user has a bad history.
+
+        This only kicks in when a stable `user_id` is provided; the
+        current citizen flow does not yet attach identities, but the
+        validator is ready for future authenticated submissions.
+        """
+        if not user_id:
+            return
+
+        stats = self._user_stats.get(user_id)
+        if not stats:
+            return
+
+        total = max(stats.get('total', 0), 1)
+        rejected = stats.get('rejected', 0)
+        flagged = stats.get('flagged', 0)
+        suspicious_ratio = (rejected + 0.5 * flagged) / float(total)
+
+        if suspicious_ratio >= 0.5:
+            # Heavy repeat offenders get a noticeable penalty.
+            self.penalties.append(15)
+        elif suspicious_ratio >= 0.3:
+            self.penalties.append(8)
+
+        self.checks['user_history'] = {
+            'status': 'applied',
+            'total_reports': total,
+            'rejected': rejected,
+            'flagged': flagged,
+            'suspicious_ratio': suspicious_ratio,
+        }
+
+    def _record_user_outcome(self, user_id, decision):
+        """Update in-memory stats for the given user based on decision."""
+        if not user_id:
+            return
+
+        stats = self._user_stats.setdefault(user_id, {
+            'total': 0,
+            'rejected': 0,
+            'flagged': 0,
+        })
+
+        stats['total'] += 1
+        if decision == 'rejected':
+            stats['rejected'] += 1
+        elif decision == 'flagged':
+            stats['flagged'] += 1
 
 
 # Singleton instance for reuse

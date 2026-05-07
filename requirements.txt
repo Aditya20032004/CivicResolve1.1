@@ -4,6 +4,10 @@ Flask-SQLAlchemy==3.0.0
 Flask-CORS==4.0.0
 gunicorn==21.2.0
 
+# Pin SQLAlchemy to a 1.4.x release that is
+# compatible with Flask-SQLAlchemy 3.0.0.
+SQLAlchemy>=1.4,<2.0
+
 python-dotenv==1.0.0
 
 # AI/ML Dependencies - CPU-only optimized for low memory
